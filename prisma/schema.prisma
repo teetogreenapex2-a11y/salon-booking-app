@@ -1,0 +1,101 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// One row per salon/customer of the platform. The [slug] route param
+// resolves to this, same pattern as BookMyPro's Business model.
+model Business {
+  id           String   @id @default(cuid())
+  slug         String   @unique
+  name         String
+  tagline      String?
+  address      String?
+  instagram    String?
+  timezone     String   @default("America/New_York")
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  stylists     Stylist[]
+  services     Service[]
+  bookings     Booking[]
+}
+
+model Stylist {
+  id          String   @id @default(cuid())
+  businessId  String
+  business    Business @relation(fields: [businessId], references: [id])
+  name        String
+  specialty   String?
+  photoUrl    String?
+  active      Boolean  @default(true)
+
+  // Calendar sync — reuses the same shape as BookMyPro's per-instructor sync
+  googleRefreshToken  String?
+  outlookRefreshToken String?
+
+  bookings    Booking[]
+  availability Availability[]
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Service {
+  id          String   @id @default(cuid())
+  businessId  String
+  business    Business @relation(fields: [businessId], references: [id])
+  name        String
+  durationMin Int
+  priceCents  Int
+  tag         String?
+  active      Boolean  @default(true)
+
+  bookings    Booking[]
+}
+
+// Recurring weekly availability per stylist (e.g. Tue 9am-5pm).
+// Actual bookable slots are computed from this minus existing Bookings
+// and any synced external calendar events.
+model Availability {
+  id         String  @id @default(cuid())
+  stylistId  String
+  stylist    Stylist @relation(fields: [stylistId], references: [id])
+  dayOfWeek  Int     // 0 = Sunday .. 6 = Saturday
+  startMin   Int     // minutes from midnight, e.g. 540 = 9:00 AM
+  endMin     Int
+}
+
+model Booking {
+  id           String   @id @default(cuid())
+  businessId   String
+  business     Business @relation(fields: [businessId], references: [id])
+  stylistId    String
+  stylist      Stylist  @relation(fields: [stylistId], references: [id])
+  serviceId    String
+  service      Service  @relation(fields: [serviceId], references: [id])
+
+  customerName  String
+  customerEmail String
+  customerPhone String?
+
+  startsAt     DateTime
+  endsAt       DateTime
+  status       BookingStatus @default(CONFIRMED)
+
+  stripePaymentIntentId String?
+
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+enum BookingStatus {
+  CONFIRMED
+  CANCELLED
+  COMPLETED
+  NO_SHOW
+}
