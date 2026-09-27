@@ -1,9 +1,11 @@
-export const dynamic = "force-dynamic"; 
+export const dynamic = "force-dynamic";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { MapPin, Clock, Instagram, Star, Scissors } from "lucide-react";
 
+export default async function BusinessPage({ params }: { params: { slug: string } }) {
+  const business = await prisma.business.findUnique({
     where: { slug: params.slug },
     include: { stylists: { where: { active: true } } },
   });
