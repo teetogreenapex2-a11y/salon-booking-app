@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
+export const dynamic = "force-dynamic";
 import { MapPin, Clock, Instagram, Star, Scissors } from "lucide-react";
 
 export default async function BusinessPage({ params }: { params: { slug: string } }) {
