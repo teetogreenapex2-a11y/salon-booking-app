@@ -1,0 +1,54 @@
+
+/* --- Admin panel styles (appended for the admin dashboard) --- */
+
+.admin-nav {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  padding: 16px 24px;
+  border-bottom: 1px solid rgba(36, 28, 31, 0.1);
+  background: #fff;
+}
+.admin-nav-title { font-size: 18px; font-weight: 600; }
+.admin-nav-links { display: flex; gap: 18px; flex: 1; flex-wrap: wrap; }
+.admin-nav-links a { color: var(--ink); text-decoration: none; font-size: 14px; }
+.admin-nav-links a:hover { color: var(--berry); }
+
+.stat-row { display: flex; gap: 12px; flex-wrap: wrap; }
+.stat-card {
+  background: #fff;
+  border: 1px solid rgba(36, 28, 31, 0.1);
+  border-radius: 4px;
+  padding: 18px 22px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 140px;
+}
+.stat-number { font-size: 28px; font-weight: 600; font-family: "Fraunces", serif; }
+
+.admin-table { width: 100%; border-collapse: collapse; font-size: 14px; }
+.admin-table th {
+  text-align: left;
+  font-weight: 500;
+  color: rgba(36, 28, 31, 0.6);
+  border-bottom: 1px solid rgba(36, 28, 31, 0.15);
+  padding: 8px 10px;
+}
+.admin-table td {
+  padding: 10px;
+  border-bottom: 1px solid rgba(36, 28, 31, 0.08);
+}
+
+.status-pill {
+  font-size: 11px;
+  padding: 3px 9px;
+  border-radius: 10px;
+  font-weight: 500;
+}
+.status-confirmed { background: #e3f3e6; color: #2e7d32; }
+.status-cancelled { background: #f3e3e3; color: #b3261e; }
+.status-completed { background: #e3e8f3; color: #2c4a9e; }
+.status-no_show { background: #f3ece3; color: #9e6b2c; }
+
+.selected-tab { background: var(--blush); border-color: var(--berry); }
