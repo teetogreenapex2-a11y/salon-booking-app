@@ -266,3 +266,8 @@ body {
 .status-no_show { background: #f3ece3; color: #9e6b2c; }
 
 .selected-tab { background: var(--blush); border-color: var(--berry); }
+.admin-page {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 40px 24px 80px;
+}

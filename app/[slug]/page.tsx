@@ -9,12 +9,7 @@ export default async function BusinessPage({ params }: { params: { slug: string 
     where: { slug: params.slug },
     include: { stylists: { where: { active: true } } },
   });
-.admin-page {
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 40px 24px 80px;
-}
-  if (!business) notFound();
+ if (!business) notFound();
 
   return (
     <main className="page">
