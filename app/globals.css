@@ -1,4 +1,4 @@
-:root {
+ :root {
   --ink: #241c1f;
   --berry: #7a2e3d;
   --berry-dark: #5c2130;
@@ -11,9 +11,14 @@
 
 body {
   margin: 0;
-  background: var(--cream);
   color: var(--ink);
   font-family: "Work Sans", ui-sans-serif, system-ui, sans-serif;
+  background:
+    radial-gradient(circle at -5% -5%, rgba(241, 217, 212, 0.9) 0%, rgba(241, 217, 212, 0.9) 12%, transparent 13%),
+    radial-gradient(circle at 105% 105%, rgba(241, 217, 212, 0.7) 0%, rgba(241, 217, 212, 0.7) 14%, transparent 15%),
+    var(--cream);
+  background-attachment: fixed;
+  min-height: 100vh;
 }
 
 .display { font-family: "Fraunces", serif; }
