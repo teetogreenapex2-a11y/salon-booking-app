@@ -1,4 +1,4 @@
- :root {
+:root {
   --ink: #241c1f;
   --berry: #7a2e3d;
   --berry-dark: #5c2130;
@@ -213,8 +213,20 @@ body {
 }
 .admin-nav-title { font-size: 18px; font-weight: 600; }
 .admin-nav-links { display: flex; gap: 18px; flex: 1; flex-wrap: wrap; }
-.admin-nav-links a { color: var(--ink); text-decoration: none; font-size: 14px; }
-.admin-nav-links a:hover { color: var(--berry); }
+.admin-nav-links a {
+  color: var(--ink);
+  text-decoration: none;
+  font-size: 14px;
+  padding: 8px 16px;
+  border-radius: 20px;
+  border: 1px solid rgba(36, 28, 31, 0.15);
+  transition: all 0.15s ease;
+}
+.admin-nav-links a:hover {
+  color: #fff;
+  background: var(--berry);
+  border-color: var(--berry);
+}
 
 .stat-row { display: flex; gap: 12px; flex-wrap: wrap; }
 .stat-card {
