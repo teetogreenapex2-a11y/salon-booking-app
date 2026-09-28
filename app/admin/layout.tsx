@@ -18,7 +18,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         </nav>
         <AdminLogoutButton />
       </div>
-      <main className="page">{children}</main>
+      <main className="admin-page">{children}</main>
     </div>
   );
 }

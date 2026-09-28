@@ -8,7 +8,7 @@ const END_HOUR = 20; // 8 PM
 const SLOT_MINUTES = 15;
 const SLOTS_PER_HOUR = 60 / SLOT_MINUTES;
 const TOTAL_SLOTS = (END_HOUR - START_HOUR) * SLOTS_PER_HOUR;
-const ROW_HEIGHT = 18; // px per 15-min slot
+const ROW_HEIGHT = 12; // px per 15-min slot — kept short so the whole day fits with less vertical scrolling
 
 // Consistent color per service, no schema change needed — picked from a
 // fixed palette by hashing the service id.
