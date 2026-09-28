@@ -23,6 +23,7 @@ model Business {
   stylists     Stylist[]
   services     Service[]
   bookings     Booking[]
+  customers    Customer[]
 }
 
 model Stylist {
@@ -40,6 +41,7 @@ model Stylist {
 
   bookings    Booking[]
   availability Availability[]
+  preferredByCustomers Customer[] @relation("PreferredStylist")
 
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
@@ -70,6 +72,30 @@ model Availability {
   endMin     Int
 }
 
+// One row per customer of a business, matched by email. Created/updated
+// automatically the first time someone books (see the bookings API route).
+model Customer {
+  id          String   @id @default(cuid())
+  businessId  String
+  business    Business @relation(fields: [businessId], references: [id])
+  name        String
+  email       String
+  phone       String?
+
+  notes               String?
+  allergies           String?
+  preferredStylistId  String?
+  preferredStylist    Stylist? @relation("PreferredStylist", fields: [preferredStylistId], references: [id])
+  noShowCount         Int      @default(0)
+
+  bookings    Booking[]
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([businessId, email])
+}
+
 model Booking {
   id           String   @id @default(cuid())
   businessId   String
@@ -78,6 +104,9 @@ model Booking {
   stylist      Stylist  @relation(fields: [stylistId], references: [id])
   serviceId    String
   service      Service  @relation(fields: [serviceId], references: [id])
+
+  customerId    String?
+  customer      Customer? @relation(fields: [customerId], references: [id])
 
   customerName  String
   customerEmail String
