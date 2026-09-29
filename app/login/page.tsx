@@ -11,7 +11,11 @@ export default function LoginPage() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setSubmitting(true);
-    await signIn("email", { email, redirect: false });
+    // callbackUrl tells the emailed link where to send you AFTER you click
+    // it and it verifies — without this it defaults back to /login, which
+    // looks like nothing happened. /onboarding sends you straight to
+    // business setup, or on to /admin automatically if you already have one.
+    await signIn("email", { email, redirect: false, callbackUrl: "/onboarding" });
     setSubmitting(false);
     setSent(true);
   }
