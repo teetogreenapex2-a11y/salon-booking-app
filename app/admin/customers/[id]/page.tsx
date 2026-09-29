@@ -1,12 +1,18 @@
 import { prisma } from "@/lib/prisma";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, CalendarPlus } from "lucide-react";
 import CustomerEditForm from "@/components/CustomerEditForm";
 
 export const dynamic = "force-dynamic";
 
-export default async function CustomerDetail({ params }: { params: { id: string } }) {
+export default async function CustomerDetail({
+  params,
+  searchParams,
+}: {
+  params: { id: string };
+  searchParams: { booked?: string };
+}) {
   const business = await prisma.business.findFirst();
   if (!business) {
     return <p className="subtle">No business set up yet.</p>;
@@ -36,28 +42,57 @@ export default async function CustomerDetail({ params }: { params: { id: string 
         <ArrowLeft size={16} /> Customers
       </Link>
 
-      <div style={{ display: "flex", alignItems: "center", gap: 14, marginTop: 12, marginBottom: 24 }}>
-        <div className="avatar" style={{ width: 56, height: 56, fontSize: 20 }}>
-          {customer.name.charAt(0).toUpperCase()}
+      {searchParams.booked && (
+        <div
+          className="card static"
+          style={{ marginTop: 12, background: "var(--blush)", borderColor: "var(--berry)" }}
+        >
+          <p className="name" style={{ margin: 0 }}>Next appointment booked</p>
         </div>
-        <div>
-          <h1 className="display" style={{ fontSize: 24, margin: 0 }}>
-            {customer.name}
-          </h1>
-          <p className="subtle" style={{ margin: "2px 0 0" }}>
-            {customer.email}
-            {customer.phone ? ` · ${customer.phone}` : ""}
-          </p>
-          <p className="subtle" style={{ margin: "2px 0 0" }}>
-            {bookings.length} visit{bookings.length === 1 ? "" : "s"}
-            {customer.noShowCount > 0 && (
-              <span style={{ color: "#b3261e" }}>
-                {" · "}
-                {customer.noShowCount} no-show{customer.noShowCount > 1 ? "s" : ""}
-              </span>
-            )}
-          </p>
+      )}
+
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          gap: 14,
+          marginTop: 12,
+          marginBottom: 24,
+          flexWrap: "wrap",
+        }}
+      >
+        <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+          <div className="avatar" style={{ width: 56, height: 56, fontSize: 20 }}>
+            {customer.name.charAt(0).toUpperCase()}
+          </div>
+          <div>
+            <h1 className="display" style={{ fontSize: 24, margin: 0 }}>
+              {customer.name}
+            </h1>
+            <p className="subtle" style={{ margin: "2px 0 0" }}>
+              {customer.email}
+              {customer.phone ? ` · ${customer.phone}` : ""}
+            </p>
+            <p className="subtle" style={{ margin: "2px 0 0" }}>
+              {bookings.length} visit{bookings.length === 1 ? "" : "s"}
+              {customer.noShowCount > 0 && (
+                <span style={{ color: "#b3261e" }}>
+                  {" · "}
+                  {customer.noShowCount} no-show{customer.noShowCount > 1 ? "s" : ""}
+                </span>
+              )}
+            </p>
+          </div>
         </div>
+
+        <Link
+          href={`/admin/customers/${customer.id}/book`}
+          className="btn-primary"
+          style={{ display: "flex", alignItems: "center", gap: 8 }}
+        >
+          <CalendarPlus size={16} /> Book next appointment
+        </Link>
       </div>
 
       <CustomerEditForm customer={customer} stylists={stylists} />
