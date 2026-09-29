@@ -24,6 +24,7 @@ model Business {
   services     Service[]
   bookings     Booking[]
   customers    Customer[]
+  photos       Photo[]
 }
 
 model Stylist {
@@ -94,6 +95,18 @@ model Customer {
   updatedAt   DateTime @updatedAt
 
   @@unique([businessId, email])
+}
+
+// A photo shown in the gallery on the public booking page. Files are stored
+// in Vercel Blob; this row just keeps the URL and display order.
+model Photo {
+  id          String   @id @default(cuid())
+  businessId  String
+  business    Business @relation(fields: [businessId], references: [id])
+  url         String
+  caption     String?
+  order       Int      @default(0)
+  createdAt   DateTime @default(now())
 }
 
 model Booking {

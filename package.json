@@ -8,9 +8,10 @@
     "start": "next start",
     "prisma:migrate": "prisma migrate dev",
     "prisma:studio": "prisma studio"
-  },"prisma": {
-  "seed": "ts-node prisma/seed.ts"
-},
+  },
+  "prisma": {
+    "seed": "ts-node prisma/seed.ts"
+  },
   "dependencies": {
     "@prisma/client": "^5.19.0",
     "@vercel/blob": "^0.23.4",
