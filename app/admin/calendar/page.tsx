@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import Link from "next/link";
+import StylistFilter from "@/components/StylistFilter";
 
 export const dynamic = "force-dynamic";
 
@@ -44,7 +45,7 @@ function timeLabel(hour: number) {
 export default async function AdminCalendar({
   searchParams,
 }: {
-  searchParams: { date?: string };
+  searchParams: { date?: string; stylist?: string };
 }) {
   const business = await prisma.business.findFirst();
   if (!business) {
@@ -54,6 +55,7 @@ export default async function AdminCalendar({
   const dateParam = searchParams.date;
   const day = dateParam ? new Date(dateParam + "T00:00:00") : new Date();
   day.setHours(0, 0, 0, 0);
+  const dateForLinks = formatDateParam(day);
 
   const dayStart = new Date(day);
   const dayEnd = new Date(day);
@@ -64,7 +66,11 @@ export default async function AdminCalendar({
   const nextDay = new Date(day);
   nextDay.setDate(nextDay.getDate() + 1);
 
-  const [stylists, bookings] = await Promise.all([
+  const selectedStylistId =
+    searchParams.stylist && searchParams.stylist !== "all" ? searchParams.stylist : null;
+  const stylistQuery = selectedStylistId ? `&stylist=${selectedStylistId}` : "";
+
+  const [allStylists, bookings] = await Promise.all([
     prisma.stylist.findMany({
       where: { businessId: business.id, active: true },
       orderBy: { name: "asc" },
@@ -74,11 +80,16 @@ export default async function AdminCalendar({
         businessId: business.id,
         status: "CONFIRMED",
         startsAt: { gte: dayStart, lt: dayEnd },
+        ...(selectedStylistId ? { stylistId: selectedStylistId } : {}),
       },
       include: { service: true, stylist: true },
       orderBy: { startsAt: "asc" },
     }),
   ]);
+
+  const stylists = selectedStylistId
+    ? allStylists.filter((s) => s.id === selectedStylistId)
+    : allStylists;
 
   const servicesUsed = new Map<
     string,
@@ -107,20 +118,26 @@ export default async function AdminCalendar({
         })}
       </p>
 
-      <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 16 }}>
-        <Link href={`/admin/calendar?date=${formatDateParam(prevDay)}`} className="icon-btn">
+      <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 16, flexWrap: "wrap" }}>
+        <Link href={`/admin/calendar?date=${formatDateParam(prevDay)}${stylistQuery}`} className="icon-btn">
           ←
         </Link>
         <Link
-          href={`/admin/calendar?date=${formatDateParam(new Date())}`}
+          href={`/admin/calendar?date=${formatDateParam(new Date())}${stylistQuery}`}
           className="btn-primary"
           style={{ padding: "8px 16px", fontSize: 13 }}
         >
           Today
         </Link>
-        <Link href={`/admin/calendar?date=${formatDateParam(nextDay)}`} className="icon-btn">
+        <Link href={`/admin/calendar?date=${formatDateParam(nextDay)}${stylistQuery}`} className="icon-btn">
           →
         </Link>
+
+        <StylistFilter
+          stylists={allStylists}
+          selected={selectedStylistId ?? "all"}
+          date={dateForLinks}
+        />
       </div>
 
       {servicesUsed.size > 0 && (
