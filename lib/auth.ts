@@ -24,7 +24,7 @@ export const authOptions: NextAuthOptions = {
       // (the same email provider already used for booking confirmations)
       // instead of requiring separate SMTP credentials.
       sendVerificationRequest: async ({ identifier, url }) => {
-        await resend.emails.send({
+        const { error } = await resend.emails.send({
           from: process.env.EMAIL_FROM || "Hairsalonix <noreply@hairsalonix.com>",
           to: identifier,
           subject: "Sign in to Hairsalonix",
@@ -34,6 +34,14 @@ export const authOptions: NextAuthOptions = {
             <p style="color:#888;font-size:13px">This link expires in 24 hours. If you didn't request it, you can ignore this email.</p>
           `,
         });
+
+        // Resend doesn't throw on failure — it returns an { error } object —
+        // so without this, a failed send looks identical to a successful one
+        // and shows "check your email" even though nothing was sent.
+        if (error) {
+          console.error("[auth] Resend failed to send sign-in email:", error);
+          throw new Error(`Failed to send verification email: ${error.message}`);
+        }
       },
     }),
   ],
