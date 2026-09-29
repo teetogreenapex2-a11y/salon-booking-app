@@ -47,7 +47,8 @@ body {
   flex-wrap: wrap;
   gap: 16px;
   font-size: 13px;
-  color: rgba(36, 28, 31, 0.65);
+  font-weight: 600;
+  color: rgba(36, 28, 31, 0.85);
   margin-bottom: 24px;
 }
 .meta span { display: flex; align-items: center; gap: 5px; }
@@ -96,7 +97,7 @@ body {
 .list { display: flex; flex-direction: column; gap: 8px; }
 .row { display: flex; align-items: center; justify-content: space-between; }
 .name { font-weight: 600; font-size: 15px; margin: 0; }
-.specialty, .subtle { color: rgba(36, 28, 31, 0.6); font-size: 13px; }
+.specialty, .subtle { color: rgba(36, 28, 31, 0.85); font-weight: 600; font-size: 13px; }
 .price { font-size: 18px; font-weight: 500; }
 .tag {
   font-size: 11px;
@@ -156,7 +157,7 @@ body {
   cursor: pointer;
 }
 .day-cell.selected { background: var(--berry); border-color: var(--berry); color: #fff; }
-.dow { font-size: 11px; opacity: 0.7; }
+.dow { font-size: 11px; font-weight: 600; opacity: 0.85; }
 .dom { font-size: 15px; font-weight: 600; }
 
 .slot-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
@@ -244,8 +245,8 @@ body {
 .admin-table { width: 100%; border-collapse: collapse; font-size: 14px; }
 .admin-table th {
   text-align: left;
-  font-weight: 500;
-  color: rgba(36, 28, 31, 0.6);
+  font-weight: 600;
+  color: rgba(36, 28, 31, 0.85);
   border-bottom: 1px solid rgba(36, 28, 31, 0.15);
   padding: 8px 10px;
 }
