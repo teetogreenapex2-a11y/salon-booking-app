@@ -17,6 +17,7 @@ const SECONDARY_LINKS = [
   { href: "/admin/services", label: "Services" },
   { href: "/admin/availability", label: "Hours" },
   { href: "/admin/business", label: "Business" },
+  { href: "/admin/reports", label: "Reports" },
 ];
 
 const ALL_LINKS = [...PRIMARY_LINKS, ...SECONDARY_LINKS];
