@@ -1,4 +1,5 @@
 import "./globals.css";
+import Providers from "@/components/SessionProviderWrapper";
 
 export const metadata = {
   title: "Book an appointment",
@@ -13,7 +14,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           rel="stylesheet"
         />
       </head>
-      <body>{children}</body>
+      <body>
+        <Providers>{children}</Providers>
+      </body>
     </html>
   );
 }

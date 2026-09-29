@@ -1,0 +1,69 @@
+import { PrismaAdapter } from "@next-auth/prisma-adapter";
+import type { NextAuthOptions } from "next-auth";
+import { getServerSession } from "next-auth";
+import EmailProvider from "next-auth/providers/email";
+import { Resend } from "resend";
+import { prisma } from "@/lib/prisma";
+
+// NOTE: this assumes your Resend API key is in the RESEND_API_KEY env var,
+// the same one lib/email.ts uses for booking confirmation emails. If
+// lib/email.ts uses a different env var name, change it below to match.
+const resend = new Resend(process.env.RESEND_API_KEY);
+
+export const authOptions: NextAuthOptions = {
+  adapter: PrismaAdapter(prisma),
+  session: { strategy: "database" },
+  pages: {
+    signIn: "/login",
+    verifyRequest: "/login/check-email",
+  },
+  providers: [
+    EmailProvider({
+      from: process.env.EMAIL_FROM || "Hairsalonix <noreply@hairsalonix.com>",
+      // Overrides NextAuth's default SMTP sender so it goes through Resend
+      // (the same email provider already used for booking confirmations)
+      // instead of requiring separate SMTP credentials.
+      sendVerificationRequest: async ({ identifier, url }) => {
+        await resend.emails.send({
+          from: process.env.EMAIL_FROM || "Hairsalonix <noreply@hairsalonix.com>",
+          to: identifier,
+          subject: "Sign in to Hairsalonix",
+          html: `
+            <p>Click below to sign in to Hairsalonix:</p>
+            <p><a href="${url}">Sign in to Hairsalonix</a></p>
+            <p style="color:#888;font-size:13px">This link expires in 24 hours. If you didn't request it, you can ignore this email.</p>
+          `,
+        });
+      },
+    }),
+  ],
+  callbacks: {
+    async session({ session, user }) {
+      if (session.user) {
+        (session.user as { id?: string }).id = user.id;
+      }
+      return session;
+    },
+  },
+};
+
+export async function getCurrentUser() {
+  const session = await getServerSession(authOptions);
+  return session?.user ?? null;
+}
+
+// Use this everywhere an admin page currently does
+// `prisma.business.findFirst()` — it returns the logged-in user's own
+// business instead of "the" business, so each account only ever sees its
+// own data.
+export async function getCurrentBusiness() {
+  const user = await getCurrentUser();
+  if (!user?.email) return null;
+
+  const dbUser = await prisma.user.findUnique({
+    where: { email: user.email },
+    include: { business: true },
+  });
+
+  return dbUser?.business ?? null;
+}
