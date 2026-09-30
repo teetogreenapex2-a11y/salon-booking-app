@@ -1,4 +1,6 @@
 import { prisma } from "@/lib/prisma";
+import { getCurrentBusiness } from "@/lib/auth";
+import { redirect } from "next/navigation";
 import Link from "next/link";
 import StylistFilter from "@/components/StylistFilter";
 
@@ -47,9 +49,9 @@ export default async function AdminCalendar({
 }: {
   searchParams: { date?: string; stylist?: string };
 }) {
-  const business = await prisma.business.findFirst();
+  const business = await getCurrentBusiness();
   if (!business) {
-    return <p className="subtle">No business set up yet.</p>;
+    redirect("/onboarding");
   }
 
   const dateParam = searchParams.date;

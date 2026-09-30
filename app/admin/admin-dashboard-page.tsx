@@ -1,14 +1,20 @@
-export const dynamic = "force-dynamic"; 
+export const dynamic = "force-dynamic";
 import { prisma } from "@/lib/prisma";
+import { getCurrentBusiness } from "@/lib/auth";
+import { redirect } from "next/navigation";
 import Link from "next/link";
 
 export default async function AdminDashboard() {
-  const [business, stylistCount, serviceCount, upcomingBookings] = await Promise.all([
-    prisma.business.findFirst(),
-    prisma.stylist.count({ where: { active: true } }),
-    prisma.service.count({ where: { active: true } }),
+  const business = await getCurrentBusiness();
+  if (!business) {
+    redirect("/onboarding");
+  }
+
+  const [stylistCount, serviceCount, upcomingBookings] = await Promise.all([
+    prisma.stylist.count({ where: { businessId: business.id, active: true } }),
+    prisma.service.count({ where: { businessId: business.id, active: true } }),
     prisma.booking.findMany({
-      where: { status: "CONFIRMED", startsAt: { gte: new Date() } },
+      where: { businessId: business.id, status: "CONFIRMED", startsAt: { gte: new Date() } },
       orderBy: { startsAt: "asc" },
       take: 5,
       include: { service: true, stylist: true },
@@ -18,7 +24,7 @@ export default async function AdminDashboard() {
   return (
     <div>
       <h1 className="display" style={{ fontSize: 26, marginBottom: 4 }}>
-        {business?.name ?? "Your salon"}
+        {business.name}
       </h1>
       <p className="subtle" style={{ marginBottom: 24 }}>
         Overview

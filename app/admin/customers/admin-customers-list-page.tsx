@@ -1,11 +1,14 @@
 import { prisma } from "@/lib/prisma";
+import { getCurrentBusiness } from "@/lib/auth";
+import { redirect } from "next/navigation";
 import Link from "next/link";
 
-export default async function CustomersPage() {
-  const business = await prisma.business.findFirst();
+export const dynamic = "force-dynamic";
 
+export default async function CustomersPage() {
+  const business = await getCurrentBusiness();
   if (!business) {
-    return <p className="subtle">No business record found — check your seed data.</p>;
+    redirect("/onboarding");
   }
 
   const customers = await prisma.customer.findMany({

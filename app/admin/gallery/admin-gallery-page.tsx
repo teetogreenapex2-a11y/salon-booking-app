@@ -1,12 +1,14 @@
 import { prisma } from "@/lib/prisma";
+import { getCurrentBusiness } from "@/lib/auth";
+import { redirect } from "next/navigation";
 import GalleryManager from "@/components/GalleryManager";
 
 export const dynamic = "force-dynamic";
 
 export default async function AdminGallery() {
-  const business = await prisma.business.findFirst();
+  const business = await getCurrentBusiness();
   if (!business) {
-    return <p className="subtle">No business set up yet.</p>;
+    redirect("/onboarding");
   }
 
   const photos = await prisma.photo.findMany({

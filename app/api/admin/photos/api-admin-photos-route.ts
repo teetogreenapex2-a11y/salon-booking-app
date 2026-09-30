@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { getCurrentBusiness } from "@/lib/auth";
 import { put } from "@vercel/blob";
 
 export async function GET() {
-  const business = await prisma.business.findFirst();
+  const business = await getCurrentBusiness();
   if (!business) return NextResponse.json([]);
 
   const photos = await prisma.photo.findMany({
@@ -14,7 +15,7 @@ export async function GET() {
 }
 
 export async function POST(req: NextRequest) {
-  const business = await prisma.business.findFirst();
+  const business = await getCurrentBusiness();
   if (!business) {
     return NextResponse.json({ error: "No business set up" }, { status: 400 });
   }

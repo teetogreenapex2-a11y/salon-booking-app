@@ -1,8 +1,18 @@
 import { prisma } from "@/lib/prisma";
+import { getCurrentBusiness } from "@/lib/auth";
+import { redirect } from "next/navigation";
 import CancelBookingButton from "@/components/CancelBookingButton";
 
+export const dynamic = "force-dynamic";
+
 export default async function BookingsPage() {
+  const business = await getCurrentBusiness();
+  if (!business) {
+    redirect("/onboarding");
+  }
+
   const bookings = await prisma.booking.findMany({
+    where: { businessId: business.id },
     orderBy: { startsAt: "desc" },
     include: { service: true, stylist: true },
     take: 100,

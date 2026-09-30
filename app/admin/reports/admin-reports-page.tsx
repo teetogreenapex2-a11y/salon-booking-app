@@ -1,4 +1,6 @@
 import { prisma } from "@/lib/prisma";
+import { getCurrentBusiness } from "@/lib/auth";
+import { redirect } from "next/navigation";
 import Link from "next/link";
 
 export const dynamic = "force-dynamic";
@@ -16,9 +18,9 @@ export default async function AdminReports({
 }: {
   searchParams: { month?: string };
 }) {
-  const business = await prisma.business.findFirst();
+  const business = await getCurrentBusiness();
   if (!business) {
-    return <p className="subtle">No business set up yet.</p>;
+    redirect("/onboarding");
   }
 
   const now = new Date();

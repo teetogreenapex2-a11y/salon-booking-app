@@ -1,11 +1,13 @@
-import { prisma } from "@/lib/prisma";
+import { getCurrentBusiness } from "@/lib/auth";
+import { redirect } from "next/navigation";
 import BusinessForm from "@/components/admin/BusinessForm";
 
-export default async function BusinessSettingsPage() {
-  const business = await prisma.business.findFirst();
+export const dynamic = "force-dynamic";
 
+export default async function BusinessSettingsPage() {
+  const business = await getCurrentBusiness();
   if (!business) {
-    return <p className="subtle">No business record found — check your seed data.</p>;
+    redirect("/onboarding");
   }
 
   return (
