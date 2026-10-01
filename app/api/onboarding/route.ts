@@ -43,6 +43,10 @@ export async function POST(req: NextRequest) {
       slug: cleanSlug,
       address: address || null,
       ownerId: user.id,
+      // 14-day free trial starting now, so a new signup can use the app
+      // immediately without hitting a paywall — the admin layout only
+      // nudges toward /admin/billing once this passes with no subscription.
+      trialEndsAt: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000),
     },
   });
 

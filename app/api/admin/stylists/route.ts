@@ -1,10 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getCurrentBusiness } from "@/lib/auth";
+import { syncStylistSubscriptionQuantity } from "@/lib/stripe";
 
-// businessId now always comes from the logged-in user's own business, never
-// from the request body — otherwise anyone signed in could create a stylist
-// under any business by passing a different businessId.
+// businessId always comes from the logged-in user's own business, never
+// from the request body — otherwise anyone signed in could create a
+// stylist under any business by passing a different businessId.
 export async function POST(req: NextRequest) {
   const business = await getCurrentBusiness();
   if (!business) {
@@ -18,5 +19,10 @@ export async function POST(req: NextRequest) {
   const stylist = await prisma.stylist.create({
     data: { businessId: business.id, name, specialty: specialty || null },
   });
+
+  // Keeps the Stripe subscription's per-stylist quantity accurate — a
+  // no-op if this business hasn't subscribed yet.
+  await syncStylistSubscriptionQuantity(business.id);
+
   return NextResponse.json(stylist);
 }
