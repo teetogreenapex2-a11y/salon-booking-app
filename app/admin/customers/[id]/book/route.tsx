@@ -49,6 +49,7 @@ export default async function AdminBookCustomer({ params }: { params: { id: stri
           email: customer.email,
           phone: customer.phone,
         }}
+        hasCardOnFile={!!customer.stripePaymentMethodId}
       />
     </div>
   );

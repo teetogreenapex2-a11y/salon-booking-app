@@ -2,6 +2,8 @@ import { prisma } from "@/lib/prisma";
 import { getCurrentBusiness } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import CancelBookingButton from "@/components/CancelBookingButton";
+import MarkNoShowButton from "@/components/admin/MarkNoShowButton";
+import ChargeNoShowFeeButton from "@/components/admin/ChargeNoShowFeeButton";
 
 export const dynamic = "force-dynamic";
 
@@ -14,7 +16,7 @@ export default async function BookingsPage() {
   const bookings = await prisma.booking.findMany({
     where: { businessId: business.id },
     orderBy: { startsAt: "desc" },
-    include: { service: true, stylist: true },
+    include: { service: true, stylist: true, customer: true },
     take: 100,
   });
 
@@ -61,8 +63,25 @@ export default async function BookingsPage() {
                     <span className={`status-pill status-${b.status.toLowerCase()}`}>
                       {b.status}
                     </span>
+                    {b.noShowFeeChargedAt && (
+                      <div className="subtle" style={{ fontSize: 11, marginTop: 2 }}>
+                        Fee charged
+                      </div>
+                    )}
                   </td>
-                  <td>{b.status === "CONFIRMED" && <CancelBookingButton id={b.id} />}</td>
+                  <td style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                    {b.status === "CONFIRMED" && (
+                      <>
+                        <CancelBookingButton id={b.id} />
+                        <MarkNoShowButton id={b.id} />
+                      </>
+                    )}
+                    {b.status === "NO_SHOW" &&
+                      !b.noShowFeeChargedAt &&
+                      b.customer?.stripePaymentMethodId && (
+                        <ChargeNoShowFeeButton id={b.id} feeCents={business.noShowFeeCents} />
+                      )}
+                  </td>
                 </tr>
               ))}
             </tbody>

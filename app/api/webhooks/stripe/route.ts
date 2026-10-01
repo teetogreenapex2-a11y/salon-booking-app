@@ -57,6 +57,22 @@ export async function POST(req: Request) {
         break;
       }
 
+      // Fires as a business works through (or updates) Stripe Express
+      // onboarding — this is how we know their connected account can
+      // actually accept charges yet, so customer card-on-file payments can
+      // be enabled.
+      case "account.updated": {
+        const account = event.data.object as Stripe.Account;
+        const businessId = account.metadata?.businessId;
+        if (businessId) {
+          await prisma.business.update({
+            where: { id: businessId },
+            data: { stripeChargesEnabled: !!account.charges_enabled },
+          });
+        }
+        break;
+      }
+
       default:
         break;
     }

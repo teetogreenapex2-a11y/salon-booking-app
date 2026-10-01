@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Clock, ChevronLeft, ChevronRight } from "lucide-react";
+import CardOnFileStep from "./CardOnFileStep";
 
 type Service = { id: string; name: string; durationMin: number; priceCents: number; tag: string | null };
 type Stylist = { id: string; name: string; specialty: string | null };
@@ -22,20 +23,23 @@ function buildWeek(offset: number) {
 // Admin-side version of BookingFlow: the customer is already known (pulled
 // from their file), so this skips the name/email/phone form and books
 // straight onto their record via the same /api/bookings endpoint the
-// public booking page uses.
+// public booking page uses. If they already have a card on file
+// (hasCardOnFile), the card step is skipped entirely too.
 export default function AdminBookingFlow({
   businessSlug,
   services,
   stylists,
   customer,
+  hasCardOnFile = false,
 }: {
   businessSlug: string;
   services: Service[];
   stylists: Stylist[];
   customer: Customer;
+  hasCardOnFile?: boolean;
 }) {
   const router = useRouter();
-  const [step, setStep] = useState<"select" | "calendar">("select");
+  const [step, setStep] = useState<"select" | "calendar" | "card">("select");
   const [service, setService] = useState<Service | null>(null);
   const [stylist, setStylist] = useState<Stylist | null>(null);
   const [weekOffset, setWeekOffset] = useState(0);
@@ -43,6 +47,7 @@ export default function AdminBookingFlow({
   const [slots, setSlots] = useState<number[]>([]);
   const [loadingSlots, setLoadingSlots] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [pendingStartMin, setPendingStartMin] = useState<number | null>(null);
 
   const week = useMemo(() => buildWeek(weekOffset), [weekOffset]);
 
@@ -76,8 +81,18 @@ export default function AdminBookingFlow({
     if (stylist && service) await loadSlots(0, off, stylist, service);
   }
 
-  async function confirmBooking(startMin: number) {
-    if (!service || !stylist) return;
+  function handleSlotClick(startMin: number) {
+    setPendingStartMin(startMin);
+    if (hasCardOnFile) {
+      submitBooking(customer.id, startMin);
+    } else {
+      setStep("card");
+    }
+  }
+
+  async function submitBooking(customerId: string | null, startMinOverride?: number) {
+    const startMin = startMinOverride ?? pendingStartMin;
+    if (!service || !stylist || startMin === null || startMin === undefined) return;
     setSubmitting(true);
     const date = week[dateIdx];
     const startsAt = new Date(date);
@@ -96,6 +111,7 @@ export default function AdminBookingFlow({
           email: customer.email,
           phone: customer.phone || "",
         },
+        customerId: customerId ?? customer.id,
       }),
     });
 
@@ -105,12 +121,35 @@ export default function AdminBookingFlow({
       router.push(`/admin/customers/${customer.id}?booked=1`);
     } else {
       alert("That slot was just booked — pick another time.");
+      setStep("calendar");
+      setPendingStartMin(null);
       loadSlots(dateIdx, weekOffset, stylist, service);
     }
   }
 
   if (step === "select") {
     return <SelectStep services={services} stylists={stylists} onNext={goToCalendar} />;
+  }
+
+  if (step === "card") {
+    return (
+      <div>
+        <button className="back-link" onClick={() => setStep("calendar")} disabled={submitting}>
+          <ChevronLeft size={16} /> Back
+        </button>
+        {submitting ? (
+          <p className="subtle" style={{ marginTop: 16 }}>Confirming booking…</p>
+        ) : (
+          <div style={{ marginTop: 16 }}>
+            <CardOnFileStep
+              businessSlug={businessSlug}
+              customer={{ name: customer.name, email: customer.email, phone: customer.phone || "" }}
+              onDone={(id) => submitBooking(id)}
+            />
+          </div>
+        )}
+      </div>
+    );
   }
 
   return (
@@ -155,7 +194,7 @@ export default function AdminBookingFlow({
       ) : (
         <div className="slot-grid">
           {slots.map((m) => (
-            <button key={m} className="slot-btn" onClick={() => confirmBooking(m)} disabled={submitting}>
+            <button key={m} className="slot-btn" onClick={() => handleSlotClick(m)} disabled={submitting}>
               {minutesToLabel(m)}
             </button>
           ))}

@@ -45,3 +45,25 @@ export function ManageBillingButton() {
     </button>
   );
 }
+
+export function ConnectButton({ alreadyConnected }: { alreadyConnected: boolean }) {
+  const [loading, setLoading] = useState(false);
+
+  async function handleClick() {
+    setLoading(true);
+    const res = await fetch("/api/billing/connect", { method: "POST" });
+    const data = await res.json();
+    if (data.url) {
+      window.location.href = data.url;
+    } else {
+      setLoading(false);
+      alert("Something went wrong — try again.");
+    }
+  }
+
+  return (
+    <button className="btn-primary" onClick={handleClick} disabled={loading}>
+      {loading ? "Redirecting…" : alreadyConnected ? "Finish/update payment setup" : "Connect Stripe to accept payments"}
+    </button>
+  );
+}

@@ -3,7 +3,7 @@ import { prisma } from "@/lib/prisma";
 
 export async function POST(req: NextRequest) {
   const body = await req.json();
-  const { businessSlug, serviceId, stylistId, startsAt, customer } = body;
+  const { businessSlug, serviceId, stylistId, startsAt, customer, customerId } = body;
 
   if (!businessSlug || !serviceId || !stylistId || !startsAt || !customer?.name || !customer?.email) {
     return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
@@ -33,6 +33,23 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Slot no longer available" }, { status: 409 });
   }
 
+  // customerId is passed in once the card-on-file step has already
+  // created/found the Customer row; otherwise upsert one now. Every
+  // booking should end up linked to a Customer record — booking history,
+  // no-show tracking, and repeat-customer lookups all depend on it.
+  const customerRecord = customerId
+    ? await prisma.customer.findUnique({ where: { id: customerId } })
+    : await prisma.customer.upsert({
+        where: { businessId_email: { businessId: business.id, email: customer.email } },
+        update: { name: customer.name, phone: customer.phone || undefined },
+        create: {
+          businessId: business.id,
+          name: customer.name,
+          email: customer.email,
+          phone: customer.phone || null,
+        },
+      });
+
   const booking = await prisma.booking.create({
     data: {
       businessId: business.id,
@@ -40,18 +57,12 @@ export async function POST(req: NextRequest) {
       serviceId,
       startsAt: start,
       endsAt: end,
+      customerId: customerRecord?.id,
       customerName: customer.name,
       customerEmail: customer.email,
       customerPhone: customer.phone || null,
     },
   });
-
-  // TODO: Stripe Connect deposit charge goes here, same pattern as
-  // BookMyPro's webhook infra — create a PaymentIntent on the connected
-  // account and store stripePaymentIntentId on the booking.
-
-  // TODO: confirmation email/SMS + push to stylist, same as BookMyPro's
-  // 7am daily schedule cron pattern but fired on booking creation instead.
 
   return NextResponse.json(booking);
 }

@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Clock, ChevronLeft, ChevronRight } from "lucide-react";
+import CardOnFileStep from "./CardOnFileStep";
 
 type Service = { id: string; name: string; durationMin: number; priceCents: number; tag: string | null };
 type Stylist = { id: string; name: string; specialty: string | null };
@@ -28,7 +29,7 @@ export default function BookingFlow({
   stylists: Stylist[];
 }) {
   const router = useRouter();
-  const [step, setStep] = useState<"select" | "calendar">("select");
+  const [step, setStep] = useState<"select" | "calendar" | "card">("select");
   const [service, setService] = useState<Service | null>(null);
   const [stylist, setStylist] = useState<Stylist | null>(null);
   const [weekOffset, setWeekOffset] = useState(0);
@@ -37,6 +38,7 @@ export default function BookingFlow({
   const [loadingSlots, setLoadingSlots] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [customer, setCustomer] = useState({ name: "", email: "", phone: "" });
+  const [pendingStartMin, setPendingStartMin] = useState<number | null>(null);
 
   const week = useMemo(() => buildWeek(weekOffset), [weekOffset]);
 
@@ -70,12 +72,24 @@ export default function BookingFlow({
     if (stylist && service) await loadSlots(0, off, stylist, service);
   }
 
-  async function confirmBooking(startMin: number) {
-    if (!service || !stylist) return;
+  // Picking a time no longer books right away — it first goes through the
+  // card-on-file step (which skips itself if the salon hasn't connected
+  // Stripe yet), then actually submits the booking.
+  function handleSlotClick(startMin: number) {
+    if (!customer.name || !customer.email) {
+      alert("Fill in your name and email above first.");
+      return;
+    }
+    setPendingStartMin(startMin);
+    setStep("card");
+  }
+
+  async function submitBooking(customerId: string | null) {
+    if (!service || !stylist || pendingStartMin === null) return;
     setSubmitting(true);
     const date = week[dateIdx];
     const startsAt = new Date(date);
-    startsAt.setHours(0, startMin, 0, 0);
+    startsAt.setHours(0, pendingStartMin, 0, 0);
 
     const res = await fetch("/api/bookings", {
       method: "POST",
@@ -86,6 +100,7 @@ export default function BookingFlow({
         stylistId: stylist.id,
         startsAt: startsAt.toISOString(),
         customer,
+        customerId,
       }),
     });
 
@@ -96,6 +111,8 @@ export default function BookingFlow({
       router.push(`/${businessSlug}/book/confirm?id=${booking.id}`);
     } else {
       alert("That slot was just booked — pick another time.");
+      setStep("calendar");
+      setPendingStartMin(null);
       loadSlots(dateIdx, weekOffset, stylist, service);
     }
   }
@@ -107,6 +124,23 @@ export default function BookingFlow({
         stylists={stylists}
         onNext={goToCalendar}
       />
+    );
+  }
+
+  if (step === "card") {
+    return (
+      <div>
+        <button className="back-link" onClick={() => setStep("calendar")} disabled={submitting}>
+          <ChevronLeft size={16} /> Back
+        </button>
+        {submitting ? (
+          <p className="subtle" style={{ marginTop: 16 }}>Confirming your booking…</p>
+        ) : (
+          <div style={{ marginTop: 16 }}>
+            <CardOnFileStep businessSlug={businessSlug} customer={customer} onDone={submitBooking} />
+          </div>
+        )}
+      </div>
     );
   }
 
@@ -149,7 +183,7 @@ export default function BookingFlow({
       ) : (
         <div className="slot-grid">
           {slots.map((m) => (
-            <button key={m} className="slot-btn" onClick={() => confirmBooking(m)} disabled={submitting}>
+            <button key={m} className="slot-btn" onClick={() => handleSlotClick(m)} disabled={submitting}>
               {minutesToLabel(m)}
             </button>
           ))}

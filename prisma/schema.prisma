@@ -76,6 +76,9 @@ model Business {
   timezone     String   @default("America/New_York")
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
+  stripeConnectedAccountId String?   @unique
+  stripeChargesEnabled     Boolean   @default(false)
+  noShowFeeCents           Int       @default(2500)
   stripeCustomerId     String?   @unique
   stripeSubscriptionId String?   @unique
   subscriptionStatus   String?
@@ -145,7 +148,9 @@ model Customer {
   name        String
   email       String
   phone       String?
-
+  stripeConnectedAccountId String?   @unique
+  stripeChargesEnabled     Boolean   @default(false)
+  noShowFeeCents           Int       @default(2500)
   notes               String?
   allergies           String?
   preferredStylistId  String?
@@ -153,7 +158,7 @@ model Customer {
   noShowCount         Int      @default(0)
 
   bookings    Booking[]
-
+  noShowFeeChargedAt DateTime?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 

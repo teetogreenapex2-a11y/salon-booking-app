@@ -1,7 +1,7 @@
 import { getCurrentBusiness } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
-import { SubscribeButton, ManageBillingButton } from "@/components/admin/BillingButtons";
+import { SubscribeButton, ManageBillingButton, ConnectButton } from "@/components/admin/BillingButtons";
 
 export const dynamic = "force-dynamic";
 
@@ -17,7 +17,7 @@ function statusDisplay(status: string | null, trialEndsAt: Date | null) {
 export default async function BillingPage({
   searchParams,
 }: {
-  searchParams: { success?: string; canceled?: string };
+  searchParams: { success?: string; canceled?: string; connected?: string };
 }) {
   const business = await getCurrentBusiness();
   if (!business) {
@@ -55,6 +55,19 @@ export default async function BillingPage({
           <p className="name" style={{ margin: 0 }}>Checkout canceled — no charge was made.</p>
         </div>
       )}
+      {searchParams.connected && (
+        <div
+          className="card static"
+          style={{ marginBottom: 20, background: "var(--blush)", borderColor: "var(--berry)" }}
+        >
+          <p className="name" style={{ margin: 0 }}>
+            Payment setup {business.stripeChargesEnabled ? "complete" : "in progress"} —{" "}
+            {business.stripeChargesEnabled
+              ? "you can now hold cards on file."
+              : "Stripe may still be reviewing a few details."}
+          </p>
+        </div>
+      )}
 
       <div className="card static" style={{ marginBottom: 20 }}>
         <div>
@@ -80,6 +93,24 @@ export default async function BillingPage({
       </div>
 
       {hasSubscription ? <ManageBillingButton /> : <SubscribeButton />}
+
+      <h2 className="display" style={{ fontSize: 20, margin: "36px 0 8px" }}>
+        Accept customer payments
+      </h2>
+      <p className="subtle" style={{ marginBottom: 16, maxWidth: 520 }}>
+        Connect your own Stripe account so cards your customers put on file — for no-show fees and,
+        soon, deposits — get charged straight to your bank account, not Hairsalonix's. No-show fee
+        amount is set on the Business settings page.
+      </p>
+      <div className="card static" style={{ marginBottom: 16 }}>
+        <p className="name" style={{ color: business.stripeChargesEnabled ? "#2f8a52" : "#b3261e" }}>
+          {business.stripeChargesEnabled ? "Ready to accept payments" : "Not connected yet"}
+        </p>
+        <p className="subtle" style={{ margin: "4px 0 0" }}>
+          No-show fee: ${(business.noShowFeeCents / 100).toFixed(2)}
+        </p>
+      </div>
+      <ConnectButton alreadyConnected={!!business.stripeConnectedAccountId} />
     </div>
   );
 }
