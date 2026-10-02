@@ -24,9 +24,14 @@ export default async function CustomersPage() {
 
   return (
     <div>
-      <h1 className="display" style={{ fontSize: 26, marginBottom: 20 }}>
-        Customers
-      </h1>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 20 }}>
+        <h1 className="display" style={{ fontSize: 26, margin: 0 }}>
+          Customers
+        </h1>
+        <Link href="/admin/customers/import" className="btn-primary" style={{ textDecoration: "none" }}>
+          Import customers
+        </Link>
+      </div>
       {customers.length === 0 ? (
         <p className="subtle">No customers yet — they're added automatically the first time someone books.</p>
       ) : (
