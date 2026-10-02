@@ -76,8 +76,8 @@ export default function BookingFlow({
   // card-on-file step (which skips itself if the salon hasn't connected
   // Stripe yet), then actually submits the booking.
   function handleSlotClick(startMin: number) {
-    if (!customer.name || !customer.email) {
-      alert("Fill in your name and email above first.");
+    if (!customer.name || !customer.email || !customer.phone) {
+      alert("Fill in your name, email, and phone number above first.");
       return;
     }
     setPendingStartMin(startMin);
@@ -151,9 +151,13 @@ export default function BookingFlow({
       </button>
 
       <h2 className="display" style={{ fontSize: 24, margin: "12px 0 4px" }}>Pick a date & time</h2>
-      <p className="subtle">With {stylist?.name}{stylist?.specialty ? ` · ${stylist.specialty}` : ""}</p>
+      <p className="subtle" style={{ marginBottom: 20 }}>
+        With {stylist?.name}{stylist?.specialty ? ` · ${stylist.specialty}` : ""}
+      </p>
 
-      <div className="week-nav">
+      <CustomerForm customer={customer} onChange={setCustomer} />
+
+      <div className="week-nav" style={{ marginTop: 24 }}>
         <button className="icon-btn" onClick={() => changeWeek(-7)} disabled={weekOffset === 0}>
           <ChevronLeft size={16} />
         </button>
@@ -189,8 +193,6 @@ export default function BookingFlow({
           ))}
         </div>
       )}
-
-      <CustomerForm customer={customer} onChange={setCustomer} />
     </div>
   );
 }
@@ -273,7 +275,7 @@ function CustomerForm({
         onChange={(e) => onChange({ ...customer, phone: e.target.value })}
       />
       <p className="subtle" style={{ fontSize: 12, marginTop: 6 }}>
-        Fill this in before tapping a time above.
+        Fill this in, then pick a time below.
       </p>
     </div>
   );
