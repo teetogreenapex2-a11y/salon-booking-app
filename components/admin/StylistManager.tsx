@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 
 type Stylist = {
   id: string;
@@ -62,13 +63,22 @@ export default function StylistManager({
               </p>
               {s.specialty && <p className="subtle" style={{ margin: "2px 0 0" }}>{s.specialty}</p>}
             </div>
-            <button
-              className="btn-ghost"
-              style={{ padding: "6px 12px", fontSize: 12 }}
-              onClick={() => toggleActive(s.id, s.active)}
-            >
-              {s.active ? "Deactivate" : "Reactivate"}
-            </button>
+            <div className="row" style={{ gap: 8 }}>
+              <Link
+                href={`/admin/stylists/${s.id}/pricing`}
+                className="btn-ghost"
+                style={{ padding: "6px 12px", fontSize: 12 }}
+              >
+                Edit pricing
+              </Link>
+              <button
+                className="btn-ghost"
+                style={{ padding: "6px 12px", fontSize: 12 }}
+                onClick={() => toggleActive(s.id, s.active)}
+              >
+                {s.active ? "Deactivate" : "Reactivate"}
+              </button>
+            </div>
           </div>
         ))}
         {stylists.length === 0 && <p className="subtle">No stylists yet — add one below.</p>}

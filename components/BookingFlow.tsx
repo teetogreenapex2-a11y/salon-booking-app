@@ -7,6 +7,7 @@ import CardOnFileStep from "./CardOnFileStep";
 
 type Service = { id: string; name: string; durationMin: number; priceCents: number; tag: string | null };
 type Stylist = { id: string; name: string; specialty: string | null };
+type Override = { stylistId: string; serviceId: string; priceCents: number | null; durationMin: number | null };
 
 function buildWeek(offset: number) {
   const days = [];
@@ -23,15 +24,18 @@ export default function BookingFlow({
   businessSlug,
   services,
   stylists,
+  overrides,
 }: {
   businessSlug: string;
   services: Service[];
   stylists: Stylist[];
+  overrides: Override[];
 }) {
   const router = useRouter();
   const [step, setStep] = useState<"select" | "calendar" | "card">("select");
   const [service, setService] = useState<Service | null>(null);
   const [stylist, setStylist] = useState<Stylist | null>(null);
+  const [effectiveDurationMin, setEffectiveDurationMin] = useState<number | null>(null);
   const [weekOffset, setWeekOffset] = useState(0);
   const [dateIdx, setDateIdx] = useState(0);
   const [slots, setSlots] = useState<number[]>([]);
@@ -42,11 +46,25 @@ export default function BookingFlow({
 
   const week = useMemo(() => buildWeek(weekOffset), [weekOffset]);
 
+  const overrideMap = useMemo(() => {
+    const m = new Map<string, { priceCents: number | null; durationMin: number | null }>();
+    for (const o of overrides) m.set(`${o.stylistId}:${o.serviceId}`, o);
+    return m;
+  }, [overrides]);
+
+  function effectiveFor(sty: Stylist, svc: Service) {
+    const o = overrideMap.get(`${sty.id}:${svc.id}`);
+    return {
+      priceCents: o?.priceCents ?? svc.priceCents,
+      durationMin: o?.durationMin ?? svc.durationMin,
+    };
+  }
+
   async function loadSlots(idx: number, off: number, sty: Stylist, svc: Service) {
     setLoadingSlots(true);
     const date = buildWeek(off)[idx];
     const res = await fetch(
-      `/api/bookings/slots?stylistId=${sty.id}&durationMin=${svc.durationMin}&date=${date.toISOString()}`
+      `/api/bookings/slots?stylistId=${sty.id}&serviceId=${svc.id}&date=${date.toISOString()}`
     );
     const data = await res.json();
     setSlots(data.slots ?? []);
@@ -56,6 +74,7 @@ export default function BookingFlow({
   function goToCalendar(svc: Service, sty: Stylist) {
     setService(svc);
     setStylist(sty);
+    setEffectiveDurationMin(effectiveFor(sty, svc).durationMin);
     setStep("calendar");
     loadSlots(dateIdx, weekOffset, sty, svc);
   }
@@ -72,9 +91,6 @@ export default function BookingFlow({
     if (stylist && service) await loadSlots(0, off, stylist, service);
   }
 
-  // Picking a time no longer books right away — it first goes through the
-  // card-on-file step (which skips itself if the salon hasn't connected
-  // Stripe yet), then actually submits the booking.
   function handleSlotClick(startMin: number) {
     if (!customer.name || !customer.email || !customer.phone) {
       alert("Fill in your name, email, and phone number above first.");
@@ -122,6 +138,7 @@ export default function BookingFlow({
       <SelectStep
         services={services}
         stylists={stylists}
+        effectiveFor={effectiveFor}
         onNext={goToCalendar}
       />
     );
@@ -152,7 +169,8 @@ export default function BookingFlow({
 
       <h2 className="display" style={{ fontSize: 24, margin: "12px 0 4px" }}>Pick a date & time</h2>
       <p className="subtle" style={{ marginBottom: 20 }}>
-        With {stylist?.name}{stylist?.specialty ? ` · ${stylist.specialty}` : ""}
+        {service?.name} with {stylist?.name}
+        {effectiveDurationMin ? ` · ${effectiveDurationMin} min` : ""}
       </p>
 
       <CustomerForm customer={customer} onChange={setCustomer} />
@@ -200,48 +218,64 @@ export default function BookingFlow({
 function SelectStep({
   services,
   stylists,
+  effectiveFor,
   onNext,
 }: {
   services: Service[];
   stylists: Stylist[];
+  effectiveFor: (sty: Stylist, svc: Service) => { priceCents: number; durationMin: number };
   onNext: (s: Service, st: Stylist) => void;
 }) {
-  const [svc, setSvc] = useState<Service | null>(null);
   const [sty, setSty] = useState<Stylist | null>(null);
+  const [svc, setSvc] = useState<Service | null>(null);
+
+  function pickStylist(s: Stylist) {
+    setSty(s);
+    setSvc(null);
+  }
 
   return (
     <div>
-      <h2 className="display" style={{ fontSize: 24, marginBottom: 16 }}>Choose a service</h2>
-      <div className="list">
-        {services.map((s) => (
-          <button key={s.id} className={`card ${svc?.id === s.id ? "selected" : ""}`} onClick={() => setSvc(s)}>
-            <div className="row">
-              <div>
-                <div className="row" style={{ gap: 8 }}>
-                  <span className="name">{s.name}</span>
-                  {s.tag && <span className="tag">{s.tag}</span>}
-                </div>
-                <div className="row subtle" style={{ marginTop: 4, fontSize: 12 }}>
-                  <Clock size={12} /> {s.durationMin} min
-                </div>
-              </div>
-              <span className="display price">${(s.priceCents / 100).toFixed(0)}</span>
-            </div>
-          </button>
-        ))}
-      </div>
-
-      <h2 className="display" style={{ fontSize: 24, margin: "28px 0 16px" }}>Choose your stylist</h2>
+      <h2 className="display" style={{ fontSize: 24, marginBottom: 16 }}>Choose your stylist</h2>
       <div className="list">
         {stylists.map((s) => (
-          <button key={s.id} className={`card ${sty?.id === s.id ? "selected" : ""}`} onClick={() => setSty(s)}>
+          <button key={s.id} className={`card ${sty?.id === s.id ? "selected" : ""}`} onClick={() => pickStylist(s)}>
             <p className="name">{s.name}</p>
             {s.specialty && <p className="subtle" style={{ margin: "2px 0 0" }}>{s.specialty}</p>}
           </button>
         ))}
       </div>
 
-      <button className="btn-primary" disabled={!svc || !sty} onClick={() => svc && sty && onNext(svc, sty)}>
+      {sty && (
+        <>
+          <h2 className="display" style={{ fontSize: 24, margin: "28px 0 16px" }}>
+            Choose a service with {sty.name}
+          </h2>
+          <div className="list">
+            {services.map((s) => {
+              const eff = effectiveFor(sty, s);
+              return (
+                <button key={s.id} className={`card ${svc?.id === s.id ? "selected" : ""}`} onClick={() => setSvc(s)}>
+                  <div className="row">
+                    <div>
+                      <div className="row" style={{ gap: 8 }}>
+                        <span className="name">{s.name}</span>
+                        {s.tag && <span className="tag">{s.tag}</span>}
+                      </div>
+                      <div className="row subtle" style={{ marginTop: 4, fontSize: 12 }}>
+                        <Clock size={12} /> {eff.durationMin} min
+                      </div>
+                    </div>
+                    <span className="display price">${(eff.priceCents / 100).toFixed(0)}</span>
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+        </>
+      )}
+
+      <button className="btn-primary" style={{ marginTop: 20 }} disabled={!svc || !sty} onClick={() => svc && sty && onNext(svc, sty)}>
         Continue to calendar
       </button>
     </div>
@@ -270,7 +304,8 @@ function CustomerForm({
         onChange={(e) => onChange({ ...customer, email: e.target.value })}
       />
       <input
-        placeholder="Phone (optional)"
+        placeholder="Phone"
+        type="tel"
         value={customer.phone}
         onChange={(e) => onChange({ ...customer, phone: e.target.value })}
       />

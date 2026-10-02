@@ -32,7 +32,7 @@ export default async function ConfirmPage({ searchParams }: { searchParams: { id
             minute: "2-digit",
           })}
         />
-        <Row label="Total" value={`$${(booking.service.priceCents / 100).toFixed(0)}`} bold />
+        <Row label="Total" value={`$${((booking.priceCents || booking.service.priceCents) / 100).toFixed(0)}`} bold />
       </div>
     </main>
   );

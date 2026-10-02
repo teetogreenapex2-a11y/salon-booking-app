@@ -60,12 +60,6 @@ model VerificationToken {
 
 // --- App models -----------------------------------------------------------
 
-// One row per salon/customer of the platform. The [slug] route param
-// resolves to this, same pattern as BookMyPro's Business model.
-// ownerId is nullable so the one pre-existing business (created before
-// accounts existed) can keep working until it's manually linked to a User
-// in Prisma Studio; every business created through onboarding from now on
-// sets it right away.
 model Business {
   id           String   @id @default(cuid())
   slug         String   @unique
@@ -77,16 +71,11 @@ model Business {
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
-  // Hairsalonix's own subscription billing (the $20 + $10/stylist plan) —
-  // this business as a CUSTOMER of Hairsalonix, on Hairsalonix's Stripe account.
   stripeCustomerId     String?   @unique
   stripeSubscriptionId String?   @unique
   subscriptionStatus   String?
   trialEndsAt          DateTime?
 
-  // This business's OWN connected Stripe account, used to charge ITS
-  // customers directly (no-show fees, deposits later) so the money lands
-  // in the salon's own bank account instead of Hairsalonix's.
   stripeConnectedAccountId String?  @unique
   stripeChargesEnabled     Boolean  @default(false)
   noShowFeeCents           Int      @default(2500)
@@ -110,13 +99,13 @@ model Stylist {
   photoUrl    String?
   active      Boolean  @default(true)
 
-  // Calendar sync — reuses the same shape as BookMyPro's per-instructor sync
   googleRefreshToken  String?
   outlookRefreshToken String?
 
   bookings    Booking[]
   availability Availability[]
   preferredByCustomers Customer[] @relation("PreferredStylist")
+  serviceOverrides StylistService[]
 
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
@@ -133,22 +122,38 @@ model Service {
   active      Boolean  @default(true)
 
   bookings    Booking[]
+  stylistOverrides StylistService[]
 }
 
-// Recurring weekly availability per stylist (e.g. Tue 9am-5pm).
-// Actual bookable slots are computed from this minus existing Bookings
-// and any synced external calendar events.
+// Optional per-stylist override of a shared service's price and/or
+// duration (e.g. Stylist A does a cut/color in 2 hours at $90, Stylist B
+// takes 3 hours at $120 for the same Service row). Either field can be
+// left null to fall back to the base Service's value — a row only needs
+// to exist at all once a stylist has at least one override set.
+model StylistService {
+  id          String   @id @default(cuid())
+  stylistId   String
+  stylist     Stylist  @relation(fields: [stylistId], references: [id])
+  serviceId   String
+  service     Service  @relation(fields: [serviceId], references: [id])
+  priceCents  Int?
+  durationMin Int?
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([stylistId, serviceId])
+}
+
 model Availability {
   id         String  @id @default(cuid())
   stylistId  String
   stylist    Stylist @relation(fields: [stylistId], references: [id])
-  dayOfWeek  Int     // 0 = Sunday .. 6 = Saturday
-  startMin   Int     // minutes from midnight, e.g. 540 = 9:00 AM
+  dayOfWeek  Int
+  startMin   Int
   endMin     Int
 }
 
-// One row per customer of a business, matched by email. Created/updated
-// automatically the first time someone books (see the bookings API route).
 model Customer {
   id          String   @id @default(cuid())
   businessId  String
@@ -157,9 +162,6 @@ model Customer {
   email       String
   phone       String?
 
-  // This customer's card on file, saved under the BUSINESS's connected
-  // Stripe account (not Hairsalonix's) — used for no-show fees and,
-  // eventually, deposits.
   stripeCustomerId      String?
   stripePaymentMethodId String?
 
@@ -177,8 +179,6 @@ model Customer {
   @@unique([businessId, email])
 }
 
-// A photo shown in the gallery on the public booking page. Files are stored
-// in Vercel Blob; this row just keeps the URL and display order.
 model Photo {
   id          String   @id @default(cuid())
   businessId  String
@@ -209,14 +209,12 @@ model Booking {
   endsAt       DateTime
   status       BookingStatus @default(CONFIRMED)
 
+  priceCents   Int           @default(0)
+
   stripePaymentIntentId String?
 
-  // Set once the no-show fee has actually been charged to the card on
-  // file, so the "Charge fee" button only ever fires once per booking.
   noShowFeeChargedAt DateTime?
 
-  // Set once a day-before reminder text has gone out, so the reminder
-  // cron job never double-sends for the same booking.
   reminderSentAt DateTime?
 
   createdAt    DateTime @default(now())

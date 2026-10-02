@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { sendSms } from "@/lib/sms";
 import { sendEmail } from "@/lib/email";
+import { getEffectiveServiceInfo } from "@/lib/pricing";
 
 export async function POST(req: NextRequest) {
   const body = await req.json();
@@ -12,16 +13,18 @@ export async function POST(req: NextRequest) {
   }
 
   const business = await prisma.business.findUnique({ where: { slug: businessSlug } });
-  const service = await prisma.service.findUnique({ where: { id: serviceId } });
+  if (!business) {
+    return NextResponse.json({ error: "Not found" }, { status: 404 });
+  }
 
-  if (!business || !service) {
+  const info = await getEffectiveServiceInfo(stylistId, serviceId);
+  if (!info) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
 
   const start = new Date(startsAt);
-  const end = new Date(start.getTime() + service.durationMin * 60000);
+  const end = new Date(start.getTime() + info.durationMin * 60000);
 
-  // Guard against a double-book race: reject if anything now overlaps.
   const conflict = await prisma.booking.findFirst({
     where: {
       stylistId,
@@ -35,10 +38,6 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Slot no longer available" }, { status: 409 });
   }
 
-  // customerId is passed in once the card-on-file step has already
-  // created/found the Customer row; otherwise upsert one now. Every
-  // booking should end up linked to a Customer record — booking history,
-  // no-show tracking, and repeat-customer lookups all depend on it.
   const customerRecord = customerId
     ? await prisma.customer.findUnique({ where: { id: customerId } })
     : await prisma.customer.upsert({
@@ -59,6 +58,7 @@ export async function POST(req: NextRequest) {
       serviceId,
       startsAt: start,
       endsAt: end,
+      priceCents: info.priceCents,
       customerId: customerRecord?.id,
       customerName: customer.name,
       customerEmail: customer.email,
@@ -66,8 +66,6 @@ export async function POST(req: NextRequest) {
     },
   });
 
-  // Fire the confirmation text and email — never let either failure fail
-  // the booking itself.
   const origin = req.headers.get("origin") || `https://${process.env.VERCEL_URL}`;
   const link = `${origin}/${business.slug}/booking/${booking.id}`;
   const when = start.toLocaleString(undefined, {

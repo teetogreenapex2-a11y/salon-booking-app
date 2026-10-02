@@ -19,13 +19,17 @@ export default async function AdminBookCustomer({ params }: { params: { id: stri
 
   if (!customer) notFound();
 
-  const [services, stylists] = await Promise.all([
+  const [services, stylists, overrides] = await Promise.all([
     prisma.service.findMany({
       where: { businessId: business.id, active: true },
     }),
     prisma.stylist.findMany({
       where: { businessId: business.id, active: true },
       orderBy: { name: "asc" },
+    }),
+    prisma.stylistService.findMany({
+      where: { stylist: { businessId: business.id } },
+      select: { stylistId: true, serviceId: true, priceCents: true, durationMin: true },
     }),
   ]);
 
@@ -43,6 +47,7 @@ export default async function AdminBookCustomer({ params }: { params: { id: stri
         businessSlug={business.slug}
         services={services}
         stylists={stylists}
+        overrides={overrides}
         customer={{
           id: customer.id,
           name: customer.name,

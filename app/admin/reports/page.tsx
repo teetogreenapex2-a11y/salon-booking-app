@@ -40,7 +40,7 @@ async function statsForRange(businessId: string, start: Date, end: Date, stylist
     if (!entry) continue;
     if (b.status === "CONFIRMED" || b.status === "COMPLETED") {
       entry.completed += 1;
-      entry.revenueCents += b.service.priceCents;
+      entry.revenueCents += b.priceCents || b.service.priceCents;
     } else if (b.status === "NO_SHOW") {
       entry.noShows += 1;
     } else if (b.status === "CANCELLED") {
@@ -124,8 +124,6 @@ export default async function AdminReports({
   const prevMonth = new Date(year, monthIndex - 1, 1);
   const nextMonth = new Date(year, monthIndex + 1, 1);
 
-  // "Now" always drives month-to-date and year-to-date, regardless of which
-  // month is being browsed below.
   const mtdStart = new Date(now.getFullYear(), now.getMonth(), 1);
   const mtdEnd = new Date(now.getFullYear(), now.getMonth() + 1, 1);
   const ytdStart = new Date(now.getFullYear(), 0, 1);
