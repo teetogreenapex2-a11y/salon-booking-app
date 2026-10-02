@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { sendSms } from "@/lib/sms";
+import { sendEmail } from "@/lib/email";
 
 export async function POST(req: NextRequest) {
   const body = await req.json();
@@ -63,6 +65,35 @@ export async function POST(req: NextRequest) {
       customerPhone: customer.phone || null,
     },
   });
+
+  // Fire the confirmation text and email — never let either failure fail
+  // the booking itself.
+  const origin = req.headers.get("origin") || `https://${process.env.VERCEL_URL}`;
+  const link = `${origin}/${business.slug}/booking/${booking.id}`;
+  const when = start.toLocaleString(undefined, {
+    weekday: "short",
+    month: "short",
+    day: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  });
+
+  const phone = customer.phone || customerRecord?.phone;
+  if (phone) {
+    sendSms(phone, `${business.name}: You're booked for ${when}. Details: ${link}`).catch((err) =>
+      console.error("Booking confirmation SMS failed", err)
+    );
+  }
+
+  sendEmail(
+    customer.email,
+    `You're booked with ${business.name}`,
+    `
+      <p>Hi ${customer.name},</p>
+      <p>You're booked with <strong>${business.name}</strong> for <strong>${when}</strong>.</p>
+      <p><a href="${link}">View your appointment details</a></p>
+    `
+  ).catch((err) => console.error("Booking confirmation email failed", err));
 
   return NextResponse.json(booking);
 }
