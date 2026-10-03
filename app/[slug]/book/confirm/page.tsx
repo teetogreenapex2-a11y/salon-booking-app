@@ -19,7 +19,7 @@ export default async function ConfirmPage({ searchParams }: { searchParams: { id
         A confirmation has been sent to {booking.customerEmail}.
       </p>
 
-      <div className="card static">
+      <div className="card static" style={{ flexDirection: "column", alignItems: "stretch", gap: 0 }}>
         <Row label="Service" value={booking.service.name} />
         <Row label="Stylist" value={booking.stylist.name} />
         <Row
