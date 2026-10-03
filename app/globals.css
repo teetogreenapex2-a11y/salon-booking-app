@@ -17,6 +17,13 @@ html, body {
   max-width: 100%;
 }
 
+/* Any text input under 16px makes iOS Safari auto-zoom the whole page in
+   on focus, which looks exactly like the page "shifting" or "moving" —
+   this is a floor for every field, not just ones using .customer-form. */
+input, select, textarea {
+  font-size: 16px;
+}
+
 body {
   margin: 0;
   color: var(--ink);
@@ -193,7 +200,10 @@ body {
   padding: 12px 14px;
   border: 1px solid rgba(36, 28, 31, 0.15);
   border-radius: 4px;
-  font-size: 14px;
+  /* 16px, not 14px: anything smaller makes iOS Safari auto-zoom the whole
+     page in when the field is tapped, which looks like the page "shifting"
+     or "moving" on phones. */
+  font-size: 16px;
   font-family: inherit;
 }
 
