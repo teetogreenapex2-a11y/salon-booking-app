@@ -1,6 +1,5 @@
 import { prisma } from "@/lib/prisma";
-import { getCurrentBusiness } from "@/lib/auth";
-import { redirect } from "next/navigation";
+import { requireOwner } from "@/lib/access";
 import CancelBookingButton from "@/components/CancelBookingButton";
 import MarkNoShowButton from "@/components/admin/MarkNoShowButton";
 import ChargeNoShowFeeButton from "@/components/admin/ChargeNoShowFeeButton";
@@ -8,10 +7,7 @@ import ChargeNoShowFeeButton from "@/components/admin/ChargeNoShowFeeButton";
 export const dynamic = "force-dynamic";
 
 export default async function BookingsPage() {
-  const business = await getCurrentBusiness();
-  if (!business) {
-    redirect("/onboarding");
-  }
+  const business = await requireOwner();
 
   const bookings = await prisma.booking.findMany({
     where: { businessId: business.id },

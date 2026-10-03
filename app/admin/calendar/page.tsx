@@ -1,6 +1,5 @@
 import { prisma } from "@/lib/prisma";
-import { getCurrentBusiness } from "@/lib/auth";
-import { redirect } from "next/navigation";
+import { requireOwnerOrStylist } from "@/lib/access";
 import Link from "next/link";
 import StylistFilter from "@/components/StylistFilter";
 
@@ -49,10 +48,8 @@ export default async function AdminCalendar({
 }: {
   searchParams: { date?: string; stylist?: string };
 }) {
-  const business = await getCurrentBusiness();
-  if (!business) {
-    redirect("/onboarding");
-  }
+  const access = await requireOwnerOrStylist();
+  const business = access.business!;
 
   const dateParam = searchParams.date;
   const day = dateParam ? new Date(dateParam + "T00:00:00") : new Date();
@@ -68,15 +65,27 @@ export default async function AdminCalendar({
   const nextDay = new Date(day);
   nextDay.setDate(nextDay.getDate() + 1);
 
+  // A stylist account only ever sees their own column — forced here
+  // server-side (not just hidden in the UI) so changing the URL's
+  // ?stylist= param can't be used to peek at someone else's calendar.
   const selectedStylistId =
-    searchParams.stylist && searchParams.stylist !== "all" ? searchParams.stylist : null;
+    access.role === "stylist"
+      ? access.stylist.id
+      : searchParams.stylist && searchParams.stylist !== "all"
+        ? searchParams.stylist
+        : null;
   const stylistQuery = selectedStylistId ? `&stylist=${selectedStylistId}` : "";
 
   const [allStylists, bookings] = await Promise.all([
-    prisma.stylist.findMany({
-      where: { businessId: business.id, active: true },
-      orderBy: { name: "asc" },
-    }),
+    // A stylist account never needs (or should see) the rest of the
+    // team's names in the filter dropdown — just skip that query and use
+    // their own record directly.
+    access.role === "stylist"
+      ? Promise.resolve([access.stylist])
+      : prisma.stylist.findMany({
+          where: { businessId: business.id, active: true },
+          orderBy: { name: "asc" },
+        }),
     prisma.booking.findMany({
       where: {
         businessId: business.id,
@@ -135,11 +144,13 @@ export default async function AdminCalendar({
           →
         </Link>
 
-        <StylistFilter
-          stylists={allStylists}
-          selected={selectedStylistId ?? "all"}
-          date={dateForLinks}
-        />
+        {access.role === "owner" && (
+          <StylistFilter
+            stylists={allStylists}
+            selected={selectedStylistId ?? "all"}
+            date={dateForLinks}
+          />
+        )}
       </div>
 
       {servicesUsed.size > 0 && (

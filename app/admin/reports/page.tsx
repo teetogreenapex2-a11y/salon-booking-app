@@ -1,6 +1,5 @@
 import { prisma } from "@/lib/prisma";
-import { getCurrentBusiness } from "@/lib/auth";
-import { redirect } from "next/navigation";
+import { requireOwnerOrStylist } from "@/lib/access";
 import Link from "next/link";
 
 export const dynamic = "force-dynamic";
@@ -103,10 +102,8 @@ export default async function AdminReports({
 }: {
   searchParams: { month?: string };
 }) {
-  const business = await getCurrentBusiness();
-  if (!business) {
-    redirect("/onboarding");
-  }
+  const access = await requireOwnerOrStylist();
+  const business = access.business!;
 
   const now = new Date();
   let year = now.getFullYear();
@@ -129,10 +126,15 @@ export default async function AdminReports({
   const ytdStart = new Date(now.getFullYear(), 0, 1);
   const ytdEnd = new Date(now.getFullYear() + 1, 0, 1);
 
-  const stylists = await prisma.stylist.findMany({
-    where: { businessId: business.id, active: true },
-    orderBy: { name: "asc" },
-  });
+  // A stylist account only ever sees their own row in every table below —
+  // forced here server-side, not just in how the table is rendered.
+  const stylists =
+    access.role === "stylist"
+      ? [access.stylist]
+      : await prisma.stylist.findMany({
+          where: { businessId: business.id, active: true },
+          orderBy: { name: "asc" },
+        });
 
   const [mtdRows, ytdRows, browsedMonthRows] = await Promise.all([
     statsForRange(business.id, mtdStart, mtdEnd, stylists),
@@ -146,7 +148,7 @@ export default async function AdminReports({
         Reports
       </h1>
       <p className="subtle" style={{ marginBottom: 28 }}>
-        Revenue and bookings by stylist
+        {access.role === "stylist" ? "Your revenue and bookings" : "Revenue and bookings by stylist"}
       </p>
 
       <h2 className="display" style={{ fontSize: 18, marginBottom: 2 }}>

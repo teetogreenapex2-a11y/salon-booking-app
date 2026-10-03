@@ -1,28 +1,33 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getCurrentBusiness } from "@/lib/auth";
+import { getCurrentBusiness, getCurrentStylist } from "@/lib/auth";
 
 // Replaces all weekly availability windows for one stylist in a single
 // call — simpler than diffing individual rows for a small weekly grid.
-// Now also checks that the stylist actually belongs to the logged-in
-// user's business before touching anything — otherwise anyone signed in
-// could wipe another business's stylist's hours just by knowing their id.
+//
+// Allows two kinds of signed-in accounts to call this: the business owner
+// (can edit any of their stylists' hours), or a stylist account editing
+// its OWN hours only. Either way we check the target stylistId actually
+// belongs to the caller before touching anything.
 export async function PUT(req: NextRequest) {
-  const business = await getCurrentBusiness();
-  if (!business) {
-    return NextResponse.json({ error: "Not signed in" }, { status: 401 });
-  }
-
   const { stylistId, windows } = await req.json();
   if (!stylistId || !Array.isArray(windows)) {
     return NextResponse.json({ error: "Missing fields" }, { status: 400 });
   }
 
-  const stylist = await prisma.stylist.findFirst({
-    where: { id: stylistId, businessId: business.id },
-  });
-  if (!stylist) {
-    return NextResponse.json({ error: "Not found" }, { status: 404 });
+  const business = await getCurrentBusiness();
+  if (business) {
+    const stylist = await prisma.stylist.findFirst({
+      where: { id: stylistId, businessId: business.id },
+    });
+    if (!stylist) {
+      return NextResponse.json({ error: "Not found" }, { status: 404 });
+    }
+  } else {
+    const stylist = await getCurrentStylist();
+    if (!stylist || stylist.id !== stylistId) {
+      return NextResponse.json({ error: "Not signed in" }, { status: 401 });
+    }
   }
 
   await prisma.availability.deleteMany({ where: { stylistId } });

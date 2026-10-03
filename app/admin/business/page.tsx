@@ -1,14 +1,10 @@
-import { getCurrentBusiness } from "@/lib/auth";
-import { redirect } from "next/navigation";
+import { requireOwner } from "@/lib/access";
 import BusinessForm from "@/components/admin/BusinessForm";
 
 export const dynamic = "force-dynamic";
 
 export default async function BusinessSettingsPage() {
-  const business = await getCurrentBusiness();
-  if (!business) {
-    redirect("/onboarding");
-  }
+  const business = await requireOwner();
 
   return (
     <div>

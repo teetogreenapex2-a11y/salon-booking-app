@@ -1,15 +1,11 @@
 import { prisma } from "@/lib/prisma";
-import { getCurrentBusiness } from "@/lib/auth";
-import { redirect } from "next/navigation";
+import { requireOwner } from "@/lib/access";
 import Link from "next/link";
 
 export const dynamic = "force-dynamic";
 
 export default async function CustomersPage() {
-  const business = await getCurrentBusiness();
-  if (!business) {
-    redirect("/onboarding");
-  }
+  const business = await requireOwner();
 
   const customers = await prisma.customer.findMany({
     where: { businessId: business.id },

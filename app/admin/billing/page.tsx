@@ -1,5 +1,4 @@
-import { getCurrentBusiness } from "@/lib/auth";
-import { redirect } from "next/navigation";
+import { requireOwner } from "@/lib/access";
 import { prisma } from "@/lib/prisma";
 import { SubscribeButton, ManageBillingButton, ConnectButton } from "@/components/admin/BillingButtons";
 
@@ -19,10 +18,7 @@ export default async function BillingPage({
 }: {
   searchParams: { success?: string; canceled?: string; connected?: string };
 }) {
-  const business = await getCurrentBusiness();
-  if (!business) {
-    redirect("/onboarding");
-  }
+  const business = await requireOwner();
 
   const stylistCount = await prisma.stylist.count({
     where: { businessId: business.id, active: true },

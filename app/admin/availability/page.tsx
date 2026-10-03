@@ -1,21 +1,25 @@
 import { prisma } from "@/lib/prisma";
-import { getCurrentBusiness } from "@/lib/auth";
-import { redirect } from "next/navigation";
+import { requireOwnerOrStylist } from "@/lib/access";
 import AvailabilityManager from "@/components/admin/AvailabilityManager";
 
 export const dynamic = "force-dynamic";
 
 export default async function AvailabilityPage() {
-  const business = await getCurrentBusiness();
-  if (!business) {
-    redirect("/onboarding");
-  }
+  const access = await requireOwnerOrStylist();
+  const business = access.business!;
 
-  const stylists = await prisma.stylist.findMany({
-    where: { businessId: business.id, active: true },
-    include: { availability: true },
-    orderBy: { createdAt: "asc" },
-  });
+  // A stylist account only ever sees (and can only save) their own hours.
+  const stylists =
+    access.role === "stylist"
+      ? await prisma.stylist.findMany({
+          where: { id: access.stylist.id },
+          include: { availability: true },
+        })
+      : await prisma.stylist.findMany({
+          where: { businessId: business.id, active: true },
+          include: { availability: true },
+          orderBy: { createdAt: "asc" },
+        });
 
   return (
     <div>

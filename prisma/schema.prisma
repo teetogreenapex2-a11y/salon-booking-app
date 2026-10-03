@@ -101,6 +101,12 @@ model Stylist {
   photoUrl    String?
   active      Boolean  @default(true)
 
+  // The email a stylist signs in with (set by the owner on the Stylists
+  // page). Not a foreign key to User — it's just matched against the
+  // signed-in email at request time (see getCurrentStylist in lib/auth.ts)
+  // so access can be granted before that person has ever signed in once.
+  email       String?  @unique
+
   googleRefreshToken  String?
   outlookRefreshToken String?
 

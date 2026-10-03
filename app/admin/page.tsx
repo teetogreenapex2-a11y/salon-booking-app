@@ -1,14 +1,10 @@
 export const dynamic = "force-dynamic";
 import { prisma } from "@/lib/prisma";
-import { getCurrentBusiness } from "@/lib/auth";
-import { redirect } from "next/navigation";
+import { requireOwner } from "@/lib/access";
 import Link from "next/link";
 
 export default async function AdminDashboard() {
-  const business = await getCurrentBusiness();
-  if (!business) {
-    redirect("/onboarding");
-  }
+  const business = await requireOwner();
 
   const [stylistCount, serviceCount, upcomingBookings] = await Promise.all([
     prisma.stylist.count({ where: { businessId: business.id, active: true } }),

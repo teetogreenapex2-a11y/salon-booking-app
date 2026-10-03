@@ -1,9 +1,9 @@
 import { prisma } from "@/lib/prisma";
 import Link from "next/link";
-import { notFound, redirect } from "next/navigation";
+import { notFound } from "next/navigation";
 import { ArrowLeft, CalendarPlus } from "lucide-react";
 import CustomerEditForm from "@/components/CustomerEditForm";
-import { getCurrentBusiness } from "@/lib/auth";
+import { requireOwner } from "@/lib/access";
 
 export const dynamic = "force-dynamic";
 
@@ -14,10 +14,7 @@ export default async function CustomerDetail({
   params: { id: string };
   searchParams: { booked?: string };
 }) {
-  const business = await getCurrentBusiness();
-  if (!business) {
-    redirect("/onboarding");
-  }
+  const business = await requireOwner();
 
   const customer = await prisma.customer.findFirst({
     where: { id: params.id, businessId: business.id },

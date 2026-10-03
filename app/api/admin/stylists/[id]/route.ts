@@ -20,7 +20,21 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
   }
 
   const data = await req.json();
-  const stylist = await prisma.stylist.update({ where: { id: params.id }, data });
+
+  let stylist;
+  try {
+    stylist = await prisma.stylist.update({ where: { id: params.id }, data });
+  } catch (err: unknown) {
+    // P2002 = unique constraint failed — most likely someone tried to set
+    // a login email that's already in use by another stylist.
+    if (typeof err === "object" && err !== null && "code" in err && err.code === "P2002") {
+      return NextResponse.json(
+        { error: "That email is already set up as a login for another stylist." },
+        { status: 409 }
+      );
+    }
+    throw err;
+  }
 
   // Toggling `active` off/on, or any edit, is a good moment to re-check the
   // subscription quantity still matches — cheap no-op if unchanged.

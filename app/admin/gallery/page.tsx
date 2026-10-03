@@ -1,15 +1,11 @@
 import { prisma } from "@/lib/prisma";
-import { getCurrentBusiness } from "@/lib/auth";
-import { redirect } from "next/navigation";
+import { requireOwner } from "@/lib/access";
 import GalleryManager from "@/components/GalleryManager";
 
 export const dynamic = "force-dynamic";
 
 export default async function AdminGallery() {
-  const business = await getCurrentBusiness();
-  if (!business) {
-    redirect("/onboarding");
-  }
+  const business = await requireOwner();
 
   const photos = await prisma.photo.findMany({
     where: { businessId: business.id },

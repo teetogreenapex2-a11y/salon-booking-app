@@ -1,23 +1,30 @@
-import { getCurrentBusiness } from "@/lib/auth";
+import { getCurrentBusiness, getCurrentStylist } from "@/lib/auth";
 import AdminLogoutButton from "@/components/AdminLogoutButton";
 import AdminNav from "@/components/AdminNav";
+import StylistNav from "@/components/StylistNav";
 import Link from "next/link";
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
   const business = await getCurrentBusiness();
+  // Only bother checking for a stylist account if this isn't the owner —
+  // an owner's email never needs to also match a Stylist row.
+  const stylist = business ? null : await getCurrentStylist();
+  const isOwner = !!business;
+  const activeBusiness = business ?? stylist?.business ?? null;
 
   const subActive =
-    business?.subscriptionStatus === "active" || business?.subscriptionStatus === "trialing";
-  const trialActive = business?.trialEndsAt ? business.trialEndsAt > new Date() : false;
+    activeBusiness?.subscriptionStatus === "active" || activeBusiness?.subscriptionStatus === "trialing";
+  const trialActive = activeBusiness?.trialEndsAt ? activeBusiness.trialEndsAt > new Date() : false;
   // Shown once trial + subscription both lapse — doesn't block any page,
-  // just nudges toward /admin/billing.
-  const showBillingBanner = business && !subActive && !trialActive;
+  // just nudges toward /admin/billing. Owner-only: a stylist account has
+  // no billing page to go to and no reason to see this.
+  const showBillingBanner = isOwner && activeBusiness && !subActive && !trialActive;
 
   return (
     <div>
       <div className="admin-nav">
         <span className="display admin-nav-title">Salon Admin</span>
-        <AdminNav />
+        {isOwner ? <AdminNav /> : <StylistNav />}
         <AdminLogoutButton />
       </div>
 

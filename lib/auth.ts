@@ -113,3 +113,21 @@ export async function getCurrentBusiness() {
 
   return dbUser?.business ?? null;
 }
+
+// A stylist's login isn't a separate User-table link like an owner's —
+// it's just whatever email the owner typed into Stylist.email on the
+// Stylists admin page. That means a stylist can be given access before
+// they've ever signed in once (no Prisma Studio step needed the way the
+// owner's first login did). Matching by email also means the SAME email
+// can't accidentally be both an owner and a stylist without us knowing —
+// callers should check getCurrentBusiness() first and only fall back to
+// this when that comes back null.
+export async function getCurrentStylist() {
+  const user = await getCurrentUser();
+  if (!user?.email) return null;
+
+  return prisma.stylist.findUnique({
+    where: { email: user.email },
+    include: { business: true },
+  });
+}

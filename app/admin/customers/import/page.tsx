@@ -1,16 +1,12 @@
-import { redirect } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
-import { getCurrentBusiness } from "@/lib/auth";
+import { requireOwner } from "@/lib/access";
 import CustomerImportForm from "@/components/admin/CustomerImportForm";
 
 export const dynamic = "force-dynamic";
 
 export default async function ImportCustomersPage() {
-  const business = await getCurrentBusiness();
-  if (!business) {
-    redirect("/onboarding");
-  }
+  const business = await requireOwner();
 
   return (
     <div>

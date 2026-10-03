@@ -1,16 +1,13 @@
 import { prisma } from "@/lib/prisma";
-import { getCurrentBusiness } from "@/lib/auth";
-import { redirect, notFound } from "next/navigation";
+import { requireOwner } from "@/lib/access";
+import { notFound } from "next/navigation";
 import Link from "next/link";
 import StylistPricingForm from "@/components/admin/StylistPricingForm";
 
 export const dynamic = "force-dynamic";
 
 export default async function StylistPricingPage({ params }: { params: { id: string } }) {
-  const business = await getCurrentBusiness();
-  if (!business) {
-    redirect("/onboarding");
-  }
+  const business = await requireOwner();
 
   const stylist = await prisma.stylist.findFirst({
     where: { id: params.id, businessId: business.id },

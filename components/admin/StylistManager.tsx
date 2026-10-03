@@ -9,6 +9,7 @@ type Stylist = {
   name: string;
   specialty: string | null;
   active: boolean;
+  email: string | null;
 };
 
 export default function StylistManager({
@@ -24,6 +25,14 @@ export default function StylistManager({
   const [specialty, setSpecialty] = useState("");
   const [saving, setSaving] = useState(false);
 
+  // Per-row draft email text and save state, keyed by stylist id — lets
+  // each row's "Set login" box be edited independently.
+  const [emailDrafts, setEmailDrafts] = useState<Record<string, string>>(
+    Object.fromEntries(initialStylists.map((s) => [s.id, s.email ?? ""]))
+  );
+  const [emailSaving, setEmailSaving] = useState<string | null>(null);
+  const [emailError, setEmailError] = useState<Record<string, string>>({});
+
   async function addStylist(e: React.FormEvent) {
     e.preventDefault();
     if (!name.trim()) return;
@@ -35,6 +44,7 @@ export default function StylistManager({
     });
     const created = await res.json();
     setStylists((s) => [...s, created]);
+    setEmailDrafts((d) => ({ ...d, [created.id]: created.email ?? "" }));
     setName("");
     setSpecialty("");
     setSaving(false);
@@ -51,34 +61,101 @@ export default function StylistManager({
     router.refresh();
   }
 
+  async function saveEmail(id: string) {
+    setEmailSaving(id);
+    setEmailError((e) => ({ ...e, [id]: "" }));
+    const email = emailDrafts[id]?.trim() || null;
+
+    const res = await fetch(`/api/admin/stylists/${id}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email }),
+    });
+
+    if (res.ok) {
+      const updated = await res.json();
+      setStylists((list) => list.map((s) => (s.id === id ? { ...s, email: updated.email } : s)));
+      router.refresh();
+    } else {
+      const data = await res.json().catch(() => ({}));
+      setEmailError((e) => ({
+        ...e,
+        [id]: data.error || "Couldn't save that email.",
+      }));
+    }
+    setEmailSaving(null);
+  }
+
   return (
     <div>
       <div className="list" style={{ marginBottom: 28 }}>
         {stylists.map((s) => (
-          <div key={s.id} className="card static" style={{ justifyContent: "space-between" }}>
-            <div>
-              <p className="name">
-                {s.name}
-                {!s.active && <span className="subtle"> (inactive)</span>}
-              </p>
-              {s.specialty && <p className="subtle" style={{ margin: "2px 0 0" }}>{s.specialty}</p>}
+          <div key={s.id} className="card static" style={{ flexDirection: "column", alignItems: "stretch", gap: 10 }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              <div>
+                <p className="name">
+                  {s.name}
+                  {!s.active && <span className="subtle"> (inactive)</span>}
+                </p>
+                {s.specialty && <p className="subtle" style={{ margin: "2px 0 0" }}>{s.specialty}</p>}
+              </div>
+              <div className="row" style={{ gap: 8 }}>
+                <Link
+                  href={`/admin/stylists/${s.id}/pricing`}
+                  className="btn-ghost"
+                  style={{ padding: "6px 12px", fontSize: 12 }}
+                >
+                  Edit pricing
+                </Link>
+                <button
+                  className="btn-ghost"
+                  style={{ padding: "6px 12px", fontSize: 12 }}
+                  onClick={() => toggleActive(s.id, s.active)}
+                >
+                  {s.active ? "Deactivate" : "Reactivate"}
+                </button>
+              </div>
             </div>
-            <div className="row" style={{ gap: 8 }}>
-              <Link
-                href={`/admin/stylists/${s.id}/pricing`}
-                className="btn-ghost"
-                style={{ padding: "6px 12px", fontSize: 12 }}
-              >
-                Edit pricing
-              </Link>
+
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 8,
+                paddingTop: 10,
+                borderTop: "1px solid rgba(36,28,31,0.08)",
+              }}
+            >
+              <label className="subtle" style={{ fontSize: 12, whiteSpace: "nowrap" }}>
+                Login email
+              </label>
+              <input
+                type="email"
+                placeholder="stylist@example.com"
+                value={emailDrafts[s.id] ?? ""}
+                onChange={(e) => setEmailDrafts((d) => ({ ...d, [s.id]: e.target.value }))}
+                style={{ flex: 1, minWidth: 0 }}
+              />
               <button
                 className="btn-ghost"
-                style={{ padding: "6px 12px", fontSize: 12 }}
-                onClick={() => toggleActive(s.id, s.active)}
+                style={{ padding: "6px 12px", fontSize: 12, whiteSpace: "nowrap" }}
+                onClick={() => saveEmail(s.id)}
+                disabled={emailSaving === s.id}
               >
-                {s.active ? "Deactivate" : "Reactivate"}
+                {emailSaving === s.id ? "Saving…" : "Save"}
               </button>
             </div>
+            {emailError[s.id] && (
+              <p className="subtle" style={{ color: "#b00020", margin: 0 }}>
+                {emailError[s.id]}
+              </p>
+            )}
+            {s.email && (
+              <p className="subtle" style={{ margin: 0, fontSize: 12 }}>
+                {s.name.split(" ")[0]} signs in at hairsalonix.com/login with this email — they&rsquo;ll
+                see their own calendar, reports, and hours only.
+              </p>
+            )}
           </div>
         ))}
         {stylists.length === 0 && <p className="subtle">No stylists yet — add one below.</p>}

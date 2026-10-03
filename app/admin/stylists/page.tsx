@@ -1,15 +1,11 @@
 import { prisma } from "@/lib/prisma";
-import { getCurrentBusiness } from "@/lib/auth";
-import { redirect } from "next/navigation";
+import { requireOwner } from "@/lib/access";
 import StylistManager from "@/components/admin/StylistManager";
 
 export const dynamic = "force-dynamic";
 
 export default async function StylistsPage() {
-  const business = await getCurrentBusiness();
-  if (!business) {
-    redirect("/onboarding");
-  }
+  const business = await requireOwner();
 
   const stylists = await prisma.stylist.findMany({
     where: { businessId: business.id },
