@@ -16,6 +16,11 @@ export async function GET(req: NextRequest) {
   if (!info) {
     return NextResponse.json({ error: "Service not found" }, { status: 404 });
   }
+  if (!info.offered) {
+    // This stylist has that service's price set to $0, meaning they don't
+    // do it — no open slots for a combo that was never bookable.
+    return NextResponse.json({ slots: [] });
+  }
 
   const date = new Date(dateParam);
   const slots = await getOpenSlots(stylistId, date, info.durationMin);

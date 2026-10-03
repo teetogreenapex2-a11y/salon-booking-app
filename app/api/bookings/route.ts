@@ -21,6 +21,9 @@ export async function POST(req: NextRequest) {
   if (!info) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
+  if (!info.offered) {
+    return NextResponse.json({ error: "That stylist doesn't offer this service" }, { status: 400 });
+  }
 
   const start = new Date(startsAt);
   const end = new Date(start.getTime() + info.durationMin * 60000);

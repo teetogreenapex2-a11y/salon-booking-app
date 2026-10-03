@@ -43,7 +43,8 @@ export default async function StylistPricingPage({ params }: { params: { id: str
         {access.role === "stylist" ? "Your pricing" : `${stylist.name}’s pricing`}
       </h1>
       <p className="subtle" style={{ marginBottom: 20 }}>
-        Leave a field blank to use the business&rsquo;s standard price or duration for that service.
+        Leave a field blank to use the business&rsquo;s standard price or duration for a service, or check
+        &ldquo;I don&rsquo;t do this service&rdquo; to hide it entirely from customers booking with this stylist.
       </p>
       <StylistPricingForm stylistId={stylist.id} services={services} overrides={overrides} />
     </div>

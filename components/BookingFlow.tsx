@@ -251,27 +251,35 @@ function SelectStep({
           <h2 className="display" style={{ fontSize: 24, margin: "28px 0 16px" }}>
             Choose a service with {sty.name}
           </h2>
-          <div className="list">
-            {services.map((s) => {
-              const eff = effectiveFor(sty, s);
-              return (
-                <button key={s.id} className={`card ${svc?.id === s.id ? "selected" : ""}`} onClick={() => setSvc(s)}>
-                  <div className="row">
-                    <div>
-                      <div className="row" style={{ gap: 8 }}>
-                        <span className="name">{s.name}</span>
-                        {s.tag && <span className="tag">{s.tag}</span>}
+          {(() => {
+            const offered = services.filter((s) => effectiveFor(sty, s).priceCents !== 0);
+            if (offered.length === 0) {
+              return <p className="subtle">{sty.name} doesn&rsquo;t offer any services right now.</p>;
+            }
+            return (
+              <div className="list">
+                {offered.map((s) => {
+                  const eff = effectiveFor(sty, s);
+                  return (
+                    <button key={s.id} className={`card ${svc?.id === s.id ? "selected" : ""}`} onClick={() => setSvc(s)}>
+                      <div className="row">
+                        <div>
+                          <div className="row" style={{ gap: 8 }}>
+                            <span className="name">{s.name}</span>
+                            {s.tag && <span className="tag">{s.tag}</span>}
+                          </div>
+                          <div className="row subtle" style={{ marginTop: 4, fontSize: 12 }}>
+                            <Clock size={12} /> {eff.durationMin} min
+                          </div>
+                        </div>
+                        <span className="display price">${(eff.priceCents / 100).toFixed(0)}</span>
                       </div>
-                      <div className="row subtle" style={{ marginTop: 4, fontSize: 12 }}>
-                        <Clock size={12} /> {eff.durationMin} min
-                      </div>
-                    </div>
-                    <span className="display price">${(eff.priceCents / 100).toFixed(0)}</span>
-                  </div>
-                </button>
-              );
-            })}
-          </div>
+                    </button>
+                  );
+                })}
+              </div>
+            );
+          })()}
         </>
       )}
 
