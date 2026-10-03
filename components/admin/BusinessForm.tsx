@@ -22,6 +22,7 @@ export default function BusinessForm({ business }: { business: Business }) {
   });
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [error, setError] = useState(false);
   const [logoUrl, setLogoUrl] = useState(business.logoUrl);
   const [uploadingLogo, setUploadingLogo] = useState(false);
   const logoInputRef = useRef<HTMLInputElement>(null);
@@ -55,10 +56,11 @@ export default function BusinessForm({ business }: { business: Business }) {
     e.preventDefault();
     setSaving(true);
     setSaved(false);
+    setError(false);
 
     const noShowFeeCents = Math.round(parseFloat(form.noShowFeeDollars || "0") * 100) || 0;
 
-    await fetch("/api/admin/business", {
+    const res = await fetch("/api/admin/business", {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -71,8 +73,12 @@ export default function BusinessForm({ business }: { business: Business }) {
       }),
     });
     setSaving(false);
-    setSaved(true);
-    router.refresh();
+    if (res.ok) {
+      setSaved(true);
+      router.refresh();
+    } else {
+      setError(true);
+    }
   }
 
   return (
@@ -174,6 +180,11 @@ export default function BusinessForm({ business }: { business: Business }) {
           {saving ? "Saving…" : "Save changes"}
         </button>
         {saved && <p className="subtle" style={{ color: "#2e7d32" }}>Saved.</p>}
+        {error && (
+          <p className="subtle" style={{ color: "#c62828" }}>
+            Couldn&rsquo;t save — try signing in again and retrying.
+          </p>
+        )}
       </form>
     </div>
   );
