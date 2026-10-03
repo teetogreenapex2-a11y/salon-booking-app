@@ -65,6 +65,7 @@ model Business {
   slug         String   @unique
   name         String
   tagline      String?
+  logoUrl      String?
   address      String?
   instagram    String?
   timezone     String   @default("America/New_York")

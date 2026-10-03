@@ -14,7 +14,16 @@ export default async function BusinessPage({ params }: { params: { slug: string 
   return (
     <main className="page">
       <div className="hero">
-        <Scissors size={32} color="var(--berry)" />
+        {business.logoUrl ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={business.logoUrl}
+            alt={business.name}
+            style={{ maxWidth: "100%", maxHeight: "100%", objectFit: "contain" }}
+          />
+        ) : (
+          <Scissors size={32} color="var(--berry)" />
+        )}
       </div>
 
       <h1 className="display title">{business.name}</h1>
