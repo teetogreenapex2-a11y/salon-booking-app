@@ -34,7 +34,7 @@ export default function MarketingHome() {
           .mkt .mkt-grid-3 { grid-template-columns: 1fr 1fr; }
           .mkt .mkt-grid-2 { grid-template-columns: 1fr; }
           .mkt .mkt-nav-links { gap: 14px; }
-          .mkt .mkt-nav-links span.mkt-nav-text { display: none; }
+          .mkt .mkt-nav-links .mkt-nav-text { display: none; }
           .mkt h1.mkt-hero-title { font-size: 38px !important; }
         }
         @media (max-width: 600px) {
