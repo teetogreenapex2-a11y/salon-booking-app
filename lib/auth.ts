@@ -65,13 +65,32 @@ export const authOptions: NextAuthOptions = {
         password: { label: "Password", type: "password" },
       },
       async authorize(credentials) {
-        if (!credentials?.email || !credentials?.password) return null;
+        // Temporary logging to find exactly which check is failing —
+        // remove once password login is confirmed working. Shows up in
+        // Vercel's Runtime Logs, never in anything the person signing in
+        // can see.
+        if (!credentials?.email || !credentials?.password) {
+          console.error("[auth] credentials login: missing email or password in submitted form");
+          return null;
+        }
 
         const user = await prisma.user.findUnique({ where: { email: credentials.email } });
-        if (!user?.passwordHash) return null;
+        if (!user) {
+          console.error(`[auth] credentials login: no User row found for email "${credentials.email}"`);
+          return null;
+        }
+        if (!user.passwordHash) {
+          console.error(`[auth] credentials login: User "${credentials.email}" has no passwordHash set`);
+          return null;
+        }
 
         const valid = await bcrypt.compare(credentials.password, user.passwordHash);
-        if (!valid) return null;
+        if (!valid) {
+          console.error(
+            `[auth] credentials login: password did not match stored hash for "${credentials.email}" (hash length ${user.passwordHash.length})`
+          );
+          return null;
+        }
 
         return { id: user.id, email: user.email, name: user.name };
       },
