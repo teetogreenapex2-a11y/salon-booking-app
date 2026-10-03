@@ -3,21 +3,28 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
-// A stylist account only ever sees their own calendar, reports, and
-// hours — everything else in AdminNav (customers, services, business
-// settings, billing, etc.) is owner-only.
-const LINKS = [
-  { href: "/admin/calendar", label: "Calendar" },
-  { href: "/admin/reports", label: "Reports" },
-  { href: "/admin/availability", label: "My hours" },
-];
+// A stylist account only ever sees their own calendar, reports, hours,
+// and pricing — everything else in AdminNav (customers, services as a
+// whole, business settings, billing, etc.) is owner-only.
+function linksFor(stylistId: string | null) {
+  const links = [
+    { href: "/admin/calendar", label: "Calendar" },
+    { href: "/admin/reports", label: "Reports" },
+    { href: "/admin/availability", label: "My hours" },
+  ];
+  if (stylistId) {
+    links.push({ href: `/admin/stylists/${stylistId}/pricing`, label: "My pricing" });
+  }
+  return links;
+}
 
 function isActive(pathname: string | null, href: string) {
   return pathname?.startsWith(href);
 }
 
-export default function StylistNav() {
+export default function StylistNav({ stylistId }: { stylistId: string }) {
   const pathname = usePathname();
+  const LINKS = linksFor(stylistId);
 
   return (
     <>
