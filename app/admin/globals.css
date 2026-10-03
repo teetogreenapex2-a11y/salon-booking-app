@@ -9,6 +9,14 @@
 
 * { box-sizing: border-box; }
 
+/* Lock horizontal movement of the page itself. Elements that need their
+   own sideways scroll (nav pill row, calendar grid) set overflow-x: auto
+   on themselves, which still works fine nested inside this. */
+html, body {
+  overflow-x: hidden;
+  max-width: 100%;
+}
+
 body {
   margin: 0;
   color: var(--ink);
