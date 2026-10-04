@@ -155,16 +155,27 @@ export default function ProductManager({
         className="customer-form"
         style={{ marginTop: 0, paddingTop: 0, borderTop: "none", maxWidth: 360 }}
       >
-        <input placeholder="Name" value={name} onChange={(e) => setName(e.target.value)} />
+        <label className="subtle" style={{ fontSize: 12 }}>
+          Name
+        </label>
+        <input placeholder="e.g. Shampoo" value={name} onChange={(e) => setName(e.target.value)} />
+
+        <label className="subtle" style={{ fontSize: 12, marginTop: 8 }}>
+          Price (dollars)
+        </label>
         <input
-          placeholder="Price (dollars)"
+          placeholder="20.00"
           type="number"
           step="0.01"
           value={price}
           onChange={(e) => setPrice(e.target.value)}
         />
+
+        <label className="subtle" style={{ fontSize: 12, marginTop: 8 }}>
+          Starting stock (how many you have on hand)
+        </label>
         <input
-          placeholder="Starting stock"
+          placeholder="10"
           type="number"
           value={stock}
           onChange={(e) => setStock(e.target.value)}
