@@ -21,7 +21,7 @@ export default async function BillingPage({
   const business = await requireOwner();
 
   const stylistCount = await prisma.stylist.count({
-    where: { businessId: business.id, active: true },
+    where: { businessId: business.id, active: true, independentBilling: false },
   });
   const addOnCount = Math.max(stylistCount - 1, 0);
   const monthlyTotal = 20 + addOnCount * 10;

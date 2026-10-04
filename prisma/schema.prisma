@@ -110,6 +110,25 @@ model Stylist {
   googleRefreshToken  String?
   outlookRefreshToken String?
 
+  // Booth-renter support — both default to false (everyone stays exactly
+  // as they work today unless the owner flips one of these on).
+  //
+  // independentPayouts: when true, this stylist's own card-on-file charges
+  // (no-show fees, deposits) land in THEIR Stripe account instead of the
+  // salon owner's. Needs its own Connect onboarding below.
+  independentPayouts        Boolean  @default(false)
+  stripeConnectedAccountId  String?  @unique
+  stripeChargesEnabled      Boolean  @default(false)
+
+  // independentBilling: when true, this stylist pays Hairsalonix directly
+  // for their own seat and is excluded from the salon's per-stylist add-on
+  // count (see addOnQuantityFor in lib/stripe.ts). Independent of the
+  // payouts toggle above — a stylist can have either, both, or neither.
+  independentBilling   Boolean   @default(false)
+  stripeCustomerId     String?   @unique
+  stripeSubscriptionId String?   @unique
+  subscriptionStatus   String?
+
   bookings    Booking[]
   availability Availability[]
   preferredByCustomers Customer[] @relation("PreferredStylist")

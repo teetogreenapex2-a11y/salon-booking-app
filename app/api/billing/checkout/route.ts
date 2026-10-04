@@ -25,7 +25,7 @@ export async function POST(req: NextRequest) {
   }
 
   const activeStylistCount = await prisma.stylist.count({
-    where: { businessId: business.id, active: true },
+    where: { businessId: business.id, active: true, independentBilling: false },
   });
   const addOnQty = addOnQuantityFor(activeStylistCount);
 

@@ -22,8 +22,12 @@ export async function syncStylistSubscriptionQuantity(businessId: string) {
   const business = await prisma.business.findUnique({ where: { id: businessId } });
   if (!business?.stripeSubscriptionId) return;
 
+  // Independently-billed stylists (booth renters paying Hairsalonix
+  // directly for their own seat — see independentBilling on Stylist) pay
+  // their own subscription instead, so they're left out of the salon's
+  // count or they'd be billed twice for the same seat.
   const activeStylistCount = await prisma.stylist.count({
-    where: { businessId, active: true },
+    where: { businessId, active: true, independentBilling: false },
   });
   const quantity = addOnQuantityFor(activeStylistCount);
 

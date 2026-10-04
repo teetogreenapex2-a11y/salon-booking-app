@@ -10,6 +10,8 @@ type Stylist = {
   specialty: string | null;
   active: boolean;
   email: string | null;
+  independentPayouts: boolean;
+  independentBilling: boolean;
 };
 
 export default function StylistManager({
@@ -63,6 +65,20 @@ export default function StylistManager({
       body: JSON.stringify({ active: !active }),
     });
     setStylists((list) => list.map((s) => (s.id === id ? { ...s, active: !active } : s)));
+    router.refresh();
+  }
+
+  async function toggleBoothRenter(id: string, field: "independentPayouts" | "independentBilling", value: boolean) {
+    const res = await fetch(`/api/admin/stylists/${id}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ [field]: !value }),
+    });
+    if (!res.ok) {
+      alert("Couldn't save that — try again.");
+      return;
+    }
+    setStylists((list) => list.map((s) => (s.id === id ? { ...s, [field]: !value } : s)));
     router.refresh();
   }
 
@@ -161,6 +177,42 @@ export default function StylistManager({
                 see their own calendar, reports, and hours only.
               </p>
             )}
+
+            <div
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                gap: 6,
+                paddingTop: 10,
+                borderTop: "1px solid rgba(36,28,31,0.08)",
+              }}
+            >
+              <p className="subtle" style={{ fontSize: 12, fontWeight: 600, margin: 0 }}>
+                Booth renter
+              </p>
+              <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13 }}>
+                <input
+                  type="checkbox"
+                  checked={s.independentPayouts}
+                  onChange={() => toggleBoothRenter(s.id, "independentPayouts", s.independentPayouts)}
+                />
+                Gets their own Stripe account for payouts (today&rsquo;s no-show-fee auto-charge still goes
+                to your account — ask me to extend that once someone actually needs it)
+              </label>
+              <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13 }}>
+                <input
+                  type="checkbox"
+                  checked={s.independentBilling}
+                  onChange={() => toggleBoothRenter(s.id, "independentBilling", s.independentBilling)}
+                />
+                Pays Hairsalonix directly for their own seat (won&rsquo;t show up on your bill)
+              </label>
+              {(s.independentPayouts || s.independentBilling) && !s.email && (
+                <p className="subtle" style={{ margin: 0, color: "#b3563e" }}>
+                  Set a login email above so {s.name.split(" ")[0]} can sign in and finish their own Stripe setup.
+                </p>
+              )}
+            </div>
           </div>
         ))}
         {stylists.length === 0 && <p className="subtle">No stylists yet — add one below.</p>}

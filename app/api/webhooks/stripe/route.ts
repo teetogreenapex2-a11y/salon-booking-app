@@ -24,10 +24,22 @@ export async function POST(req: Request) {
       case "checkout.session.completed": {
         const session = event.data.object as Stripe.Checkout.Session;
         const businessId = session.metadata?.businessId;
+        const stylistId = session.metadata?.stylistId;
         if (businessId && typeof session.subscription === "string") {
           const sub = await stripe.subscriptions.retrieve(session.subscription);
           await prisma.business.update({
             where: { id: businessId },
+            data: {
+              stripeSubscriptionId: sub.id,
+              subscriptionStatus: sub.status,
+            },
+          });
+        } else if (stylistId && typeof session.subscription === "string") {
+          // Same thing, but for a booth renter's own seat (see
+          // /api/stylist/checkout) instead of the salon's subscription.
+          const sub = await stripe.subscriptions.retrieve(session.subscription);
+          await prisma.stylist.update({
+            where: { id: stylistId },
             data: {
               stripeSubscriptionId: sub.id,
               subscriptionStatus: sub.status,
@@ -43,9 +55,15 @@ export async function POST(req: Request) {
       case "customer.subscription.deleted": {
         const sub = event.data.object as Stripe.Subscription;
         const businessId = sub.metadata?.businessId;
+        const stylistId = sub.metadata?.stylistId;
         if (businessId) {
           await prisma.business.update({
             where: { id: businessId },
+            data: { subscriptionStatus: sub.status },
+          });
+        } else if (stylistId) {
+          await prisma.stylist.update({
+            where: { id: stylistId },
             data: { subscriptionStatus: sub.status },
           });
         } else {
@@ -53,20 +71,30 @@ export async function POST(req: Request) {
             where: { stripeSubscriptionId: sub.id },
             data: { subscriptionStatus: sub.status },
           });
+          await prisma.stylist.updateMany({
+            where: { stripeSubscriptionId: sub.id },
+            data: { subscriptionStatus: sub.status },
+          });
         }
         break;
       }
 
-      // Fires as a business works through (or updates) Stripe Express
-      // onboarding — this is how we know their connected account can
-      // actually accept charges yet, so customer card-on-file payments can
-      // be enabled.
+      // Fires as a business (or booth-renting stylist) works through or
+      // updates Stripe Express onboarding — this is how we know their
+      // connected account can actually accept charges yet, so customer
+      // card-on-file payments can be enabled.
       case "account.updated": {
         const account = event.data.object as Stripe.Account;
         const businessId = account.metadata?.businessId;
+        const stylistId = account.metadata?.stylistId;
         if (businessId) {
           await prisma.business.update({
             where: { id: businessId },
+            data: { stripeChargesEnabled: !!account.charges_enabled },
+          });
+        } else if (stylistId) {
+          await prisma.stylist.update({
+            where: { id: stylistId },
             data: { stripeChargesEnabled: !!account.charges_enabled },
           });
         }

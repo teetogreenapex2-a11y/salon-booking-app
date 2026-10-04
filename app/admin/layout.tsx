@@ -24,7 +24,14 @@ export default async function AdminLayout({ children }: { children: React.ReactN
     <div>
       <div className="admin-nav">
         <span className="display admin-nav-title">Salon Admin</span>
-        {isOwner ? <AdminNav /> : <StylistNav stylistId={stylist?.id ?? ""} />}
+        {isOwner ? (
+          <AdminNav />
+        ) : (
+          <StylistNav
+            stylistId={stylist?.id ?? ""}
+            isBoothRenter={!!(stylist?.independentPayouts || stylist?.independentBilling)}
+          />
+        )}
         <AdminLogoutButton />
       </div>
 

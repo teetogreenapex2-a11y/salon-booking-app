@@ -25,6 +25,17 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
   if (!business.stripeConnectedAccountId) {
     return NextResponse.json({ error: "Connect Stripe first in Billing" }, { status: 400 });
   }
+  // NOTE: no-show fee charges still always go to the salon's own connected
+  // account, even for a booth renter with "independent payouts" turned on.
+  // That's because the customer's card-on-file is only ever saved against
+  // the SALON's Stripe account at booking time (see /api/bookings/card-setup
+  // — it doesn't know which stylist was picked yet), and a Stripe customer
+  // + saved card only exists inside the one connected account it was
+  // created under — it can't be charged from a different one. Properly
+  // routing this per stylist would mean saving a separate card per
+  // connected account the customer might owe money to, which is a bigger
+  // change to the booking flow than this pass — worth its own follow-up if
+  // booth renters start actually needing it.
   if (!booking.customer?.stripeCustomerId || !booking.customer?.stripePaymentMethodId) {
     return NextResponse.json({ error: "No card on file for this customer" }, { status: 400 });
   }
