@@ -15,10 +15,12 @@ type CustomerInfo = { name: string; email: string; phone: string };
 // entirely — booking still proceeds normally, just with no card held.
 export default function CardOnFileStep({
   businessSlug,
+  stylistId,
   customer,
   onDone,
 }: {
   businessSlug: string;
+  stylistId: string;
   customer: CustomerInfo;
   onDone: (customerId: string | null) => void;
 }) {
@@ -33,7 +35,7 @@ export default function CardOnFileStep({
     fetch("/api/bookings/card-setup", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ businessSlug, customer }),
+      body: JSON.stringify({ businessSlug, customer, stylistId }),
     })
       .then((res) => res.json())
       .then((data) => {

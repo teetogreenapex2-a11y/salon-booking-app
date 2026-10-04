@@ -204,8 +204,15 @@ model Customer {
   email       String
   phone       String?
 
+  // Deprecated — kept so old rows aren't lost, but no longer written to.
+  // A customer's actual card(s) on file now live in CustomerCard below,
+  // one row per Stripe connected account (a card saved under the salon's
+  // account can't be charged from a booth renter's own account, or vice
+  // versa — they're separate Stripe accounts). See CustomerCard's comment.
   stripeCustomerId      String?
   stripePaymentMethodId String?
+
+  cards               CustomerCard[]
 
   notes               String?
   allergies           String?
@@ -220,6 +227,30 @@ model Customer {
   updatedAt   DateTime @updatedAt
 
   @@unique([businessId, email])
+}
+
+// A customer's saved card, scoped to ONE Stripe connected account.
+// Whoever is being paid out — the salon, or a booth renter with their own
+// independent payouts — has their own separate Stripe Connect account, and
+// a card/customer object saved under one of those accounts can only ever
+// be charged from that same account. So instead of one card per Customer,
+// this is one card per (customer, connected account) pair — a customer
+// who's booked with both the salon and a booth renter ends up with two
+// rows here, one per account, and the right one gets picked at charge time
+// by whichever account that particular booking's stylist pays out to (see
+// resolvePayoutAccountId in lib/stripe.ts).
+model CustomerCard {
+  id                    String   @id @default(cuid())
+  customerId            String
+  customer              Customer @relation(fields: [customerId], references: [id])
+  connectedAccountId    String
+  stripeCustomerId      String
+  stripePaymentMethodId String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([customerId, connectedAccountId])
 }
 
 model Photo {

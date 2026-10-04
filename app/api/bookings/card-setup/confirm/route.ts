@@ -4,8 +4,9 @@ import { stripe } from "@/lib/stripe";
 
 // Called right after the browser successfully saves a card via Stripe
 // Elements. Looks up which payment method the SetupIntent actually saved,
-// makes it the customer's default on Stripe, and records it on our
-// Customer row so the no-show charge route can use it later.
+// makes it the customer's default on Stripe, and records it on the
+// CustomerCard row for that connected account so a later charge route can
+// use it.
 export async function POST(req: NextRequest) {
   const { customerId, setupIntentId, connectedAccountId } = await req.json();
   if (!customerId || !setupIntentId || !connectedAccountId) {
@@ -25,19 +26,21 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "No payment method on setup intent" }, { status: 400 });
   }
 
-  const customer = await prisma.customer.findUnique({ where: { id: customerId } });
-  if (!customer?.stripeCustomerId) {
+  const cardRow = await prisma.customerCard.findUnique({
+    where: { customerId_connectedAccountId: { customerId, connectedAccountId } },
+  });
+  if (!cardRow) {
     return NextResponse.json({ error: "Customer not found" }, { status: 404 });
   }
 
   await stripe.customers.update(
-    customer.stripeCustomerId,
+    cardRow.stripeCustomerId,
     { invoice_settings: { default_payment_method: paymentMethodId } },
     { stripeAccount: connectedAccountId }
   );
 
-  await prisma.customer.update({
-    where: { id: customerId },
+  await prisma.customerCard.update({
+    where: { customerId_connectedAccountId: { customerId, connectedAccountId } },
     data: { stripePaymentMethodId: paymentMethodId },
   });
 

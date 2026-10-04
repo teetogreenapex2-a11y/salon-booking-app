@@ -8,6 +8,21 @@ export const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
 export const STRIPE_PRICE_BASE = process.env.STRIPE_PRICE_BASE!;
 export const STRIPE_PRICE_STYLIST = process.env.STRIPE_PRICE_STYLIST!;
 
+// Which Stripe connected account a given stylist's card charges (no-show
+// fees, retail sales, tips, ...) should go through — their OWN account if
+// they've turned on independent payouts and finished connecting it,
+// otherwise the salon's. Returns null if neither is ready to accept
+// charges yet.
+export function resolvePayoutAccountId(
+  stylist: { independentPayouts: boolean; stripeConnectedAccountId: string | null; stripeChargesEnabled: boolean },
+  business: { stripeConnectedAccountId: string | null }
+): string | null {
+  if (stylist.independentPayouts && stylist.stripeChargesEnabled && stylist.stripeConnectedAccountId) {
+    return stylist.stripeConnectedAccountId;
+  }
+  return business.stripeConnectedAccountId;
+}
+
 // $20 base covers the first stylist — everyone after that is $10/mo more.
 // Independent accounts always have exactly one stylist (themselves), so
 // this naturally comes out to $20 flat for them with no branching needed.

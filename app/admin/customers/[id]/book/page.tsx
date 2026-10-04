@@ -4,6 +4,7 @@ import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import AdminBookingFlow from "@/components/AdminBookingFlow";
 import { requireOwner } from "@/lib/access";
+import { resolvePayoutAccountId } from "@/lib/stripe";
 
 export const dynamic = "force-dynamic";
 
@@ -16,7 +17,7 @@ export default async function AdminBookCustomer({ params }: { params: { id: stri
 
   if (!customer) notFound();
 
-  const [services, stylists, overrides] = await Promise.all([
+  const [services, stylists, overrides, cardRows] = await Promise.all([
     prisma.service.findMany({
       where: { businessId: business.id, active: true },
     }),
@@ -28,7 +29,21 @@ export default async function AdminBookCustomer({ params }: { params: { id: stri
       where: { stylist: { businessId: business.id } },
       select: { stylistId: true, serviceId: true, priceCents: true, durationMin: true },
     }),
+    prisma.customerCard.findMany({ where: { customerId: customer.id } }),
   ]);
+
+  // Whether this customer already has a usable card depends on which
+  // stylist ends up picked in the flow below — a card saved under the
+  // salon's account doesn't carry over to a booth renter's own account.
+  // Compute it per stylist so AdminBookingFlow can skip the card step only
+  // when it's actually safe to.
+  const cardByStylistId: Record<string, boolean> = {};
+  for (const stylist of stylists) {
+    const accountId = resolvePayoutAccountId(stylist, business);
+    cardByStylistId[stylist.id] = cardRows.some(
+      (c) => c.connectedAccountId === accountId && !!c.stripePaymentMethodId
+    );
+  }
 
   return (
     <div>
@@ -51,7 +66,7 @@ export default async function AdminBookCustomer({ params }: { params: { id: stri
           email: customer.email,
           phone: customer.phone,
         }}
-        hasCardOnFile={!!customer.stripePaymentMethodId}
+        cardByStylistId={cardByStylistId}
       />
     </div>
   );

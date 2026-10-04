@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { requireOwner } from "@/lib/access";
+import { resolvePayoutAccountId } from "@/lib/stripe";
 import CancelBookingButton from "@/components/CancelBookingButton";
 import MarkNoShowButton from "@/components/admin/MarkNoShowButton";
 import ChargeNoShowFeeButton from "@/components/admin/ChargeNoShowFeeButton";
@@ -23,6 +24,20 @@ export default async function BookingsPage() {
     }),
   ]);
 
+  // A booking's "do they have a card on file" question depends on which
+  // connected account THAT booking's stylist pays out to — a card saved
+  // under the salon's account doesn't carry over to a booth renter's own
+  // account, or vice versa. Batch-fetch every card this page's bookings
+  // could possibly need in one query rather than one per row.
+  const customerIds = [...new Set(bookings.map((b) => b.customerId).filter((id): id is string => !!id))];
+  const cardRows = customerIds.length
+    ? await prisma.customerCard.findMany({ where: { customerId: { in: customerIds } } })
+    : [];
+  const cardFor = (customerId: string | null, accountId: string | null) =>
+    customerId && accountId
+      ? cardRows.find((c) => c.customerId === customerId && c.connectedAccountId === accountId)
+      : undefined;
+
   return (
     <div>
       <h1 className="display" style={{ fontSize: 26, marginBottom: 20 }}>
@@ -45,7 +60,11 @@ export default async function BookingsPage() {
               </tr>
             </thead>
             <tbody>
-              {bookings.map((b) => (
+              {bookings.map((b) => {
+                const accountId = resolvePayoutAccountId(b.stylist, business);
+                const card = cardFor(b.customerId, accountId);
+                const hasCard = !!card?.stripePaymentMethodId;
+                return (
                 <tr key={b.id}>
                   <td>{b.customerName}</td>
                   <td>
@@ -79,17 +98,12 @@ export default async function BookingsPage() {
                         <MarkNoShowButton id={b.id} />
                       </>
                     )}
-                    {b.status === "NO_SHOW" &&
-                      !b.noShowFeeChargedAt &&
-                      b.customer?.stripePaymentMethodId && (
-                        <ChargeNoShowFeeButton id={b.id} feeCents={business.noShowFeeCents} />
-                      )}
-                    {b.status !== "CANCELLED" &&
-                      !b.sale &&
-                      b.customer?.stripePaymentMethodId &&
-                      products.length > 0 && (
-                        <SellProductsButton bookingId={b.id} products={products} />
-                      )}
+                    {b.status === "NO_SHOW" && !b.noShowFeeChargedAt && hasCard && (
+                      <ChargeNoShowFeeButton id={b.id} feeCents={business.noShowFeeCents} />
+                    )}
+                    {b.status !== "CANCELLED" && !b.sale && hasCard && products.length > 0 && (
+                      <SellProductsButton bookingId={b.id} products={products} />
+                    )}
                     {b.sale && (
                       <span className="subtle" style={{ fontSize: 11 }}>
                         Products: ${(b.sale.totalCents / 100).toFixed(2)}
@@ -97,7 +111,8 @@ export default async function BookingsPage() {
                     )}
                   </td>
                 </tr>
-              ))}
+                );
+              })}
             </tbody>
           </table>
         </div>

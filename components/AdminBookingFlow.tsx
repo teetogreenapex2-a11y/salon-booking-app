@@ -27,14 +27,14 @@ export default function AdminBookingFlow({
   stylists,
   overrides,
   customer,
-  hasCardOnFile = false,
+  cardByStylistId = {},
 }: {
   businessSlug: string;
   services: Service[];
   stylists: Stylist[];
   overrides: Override[];
   customer: Customer;
-  hasCardOnFile?: boolean;
+  cardByStylistId?: Record<string, boolean>;
 }) {
   const router = useRouter();
   const [step, setStep] = useState<"select" | "calendar" | "card">("select");
@@ -97,7 +97,7 @@ export default function AdminBookingFlow({
 
   function handleSlotClick(startMin: number) {
     setPendingStartMin(startMin);
-    if (hasCardOnFile) {
+    if (stylist && cardByStylistId[stylist.id]) {
       submitBooking(customer.id, startMin);
     } else {
       setStep("card");
@@ -159,6 +159,7 @@ export default function AdminBookingFlow({
           <div style={{ marginTop: 16 }}>
             <CardOnFileStep
               businessSlug={businessSlug}
+              stylistId={stylist?.id ?? ""}
               customer={{ name: customer.name, email: customer.email, phone: customer.phone || "" }}
               onDone={(id) => submitBooking(id)}
             />

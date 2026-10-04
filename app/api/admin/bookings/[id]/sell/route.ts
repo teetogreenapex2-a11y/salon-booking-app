@@ -1,14 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getCurrentBusiness } from "@/lib/auth";
-import { stripe } from "@/lib/stripe";
+import { stripe, resolvePayoutAccountId } from "@/lib/stripe";
 
 // Rings up retail products at a booking's checkout — credited to whichever
-// stylist did the booking (for commission/reporting), charged to the
-// customer's card on file the same way the no-show fee is: against the
-// SALON's own connected Stripe account, since that's the only account the
-// card-on-file was ever saved under (see the note in charge-no-show's
-// route for why a booth renter's own account can't be used here yet).
+// stylist did the booking (for commission/reporting), charged through
+// whichever Stripe account THAT stylist pays out to (their own, for a
+// booth renter with independent payouts set up, otherwise the salon's —
+// see resolvePayoutAccountId) using the card on file saved under that same
+// account.
 export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
   const business = await getCurrentBusiness();
   if (!business) {
@@ -25,10 +25,18 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
   if (booking.sale) {
     return NextResponse.json({ error: "Products were already rung up for this booking" }, { status: 400 });
   }
-  if (!business.stripeConnectedAccountId) {
+
+  const accountId = resolvePayoutAccountId(booking.stylist, business);
+  if (!accountId) {
     return NextResponse.json({ error: "Connect Stripe first in Billing" }, { status: 400 });
   }
-  if (!booking.customer?.stripeCustomerId || !booking.customer?.stripePaymentMethodId) {
+  if (!booking.customerId) {
+    return NextResponse.json({ error: "No card on file for this customer" }, { status: 400 });
+  }
+  const cardRow = await prisma.customerCard.findUnique({
+    where: { customerId_connectedAccountId: { customerId: booking.customerId, connectedAccountId: accountId } },
+  });
+  if (!cardRow?.stripePaymentMethodId) {
     return NextResponse.json({ error: "No card on file for this customer" }, { status: 400 });
   }
 
@@ -72,13 +80,13 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
       {
         amount: totalCents,
         currency: "usd",
-        customer: booking.customer.stripeCustomerId,
-        payment_method: booking.customer.stripePaymentMethodId,
+        customer: cardRow.stripeCustomerId,
+        payment_method: cardRow.stripePaymentMethodId,
         off_session: true,
         confirm: true,
         description: `Product sale — ${booking.customerName}`,
       },
-      { stripeAccount: business.stripeConnectedAccountId }
+      { stripeAccount: accountId }
     );
     paymentIntentId = paymentIntent.id;
   } catch (err) {

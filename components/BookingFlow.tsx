@@ -154,7 +154,12 @@ export default function BookingFlow({
           <p className="subtle" style={{ marginTop: 16 }}>Confirming your booking…</p>
         ) : (
           <div style={{ marginTop: 16 }}>
-            <CardOnFileStep businessSlug={businessSlug} customer={customer} onDone={submitBooking} />
+            <CardOnFileStep
+              businessSlug={businessSlug}
+              stylistId={stylist?.id ?? ""}
+              customer={customer}
+              onDone={submitBooking}
+            />
           </div>
         )}
       </div>

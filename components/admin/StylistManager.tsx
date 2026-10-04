@@ -227,8 +227,8 @@ export default function StylistManager({
                   checked={s.independentPayouts}
                   onChange={() => toggleFlag(s.id, "independentPayouts", s.independentPayouts)}
                 />
-                Gets their own Stripe account for payouts (today&rsquo;s no-show-fee auto-charge still goes
-                to your account — ask me to extend that once someone actually needs it)
+                Gets their own Stripe account — no-show fees, retail sales, and tips on their
+                bookings pay out to them directly once they&rsquo;ve connected it below
               </label>
               <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13 }}>
                 <input
