@@ -3,18 +3,25 @@ import { requireOwner } from "@/lib/access";
 import CancelBookingButton from "@/components/CancelBookingButton";
 import MarkNoShowButton from "@/components/admin/MarkNoShowButton";
 import ChargeNoShowFeeButton from "@/components/admin/ChargeNoShowFeeButton";
+import SellProductsButton from "@/components/admin/SellProductsButton";
 
 export const dynamic = "force-dynamic";
 
 export default async function BookingsPage() {
   const business = await requireOwner();
 
-  const bookings = await prisma.booking.findMany({
-    where: { businessId: business.id },
-    orderBy: { startsAt: "desc" },
-    include: { service: true, stylist: true, customer: true },
-    take: 100,
-  });
+  const [bookings, products] = await Promise.all([
+    prisma.booking.findMany({
+      where: { businessId: business.id },
+      orderBy: { startsAt: "desc" },
+      include: { service: true, stylist: true, customer: true, sale: true },
+      take: 100,
+    }),
+    prisma.product.findMany({
+      where: { businessId: business.id, active: true },
+      orderBy: { name: "asc" },
+    }),
+  ]);
 
   return (
     <div>
@@ -77,6 +84,17 @@ export default async function BookingsPage() {
                       b.customer?.stripePaymentMethodId && (
                         <ChargeNoShowFeeButton id={b.id} feeCents={business.noShowFeeCents} />
                       )}
+                    {b.status !== "CANCELLED" &&
+                      !b.sale &&
+                      b.customer?.stripePaymentMethodId &&
+                      products.length > 0 && (
+                        <SellProductsButton bookingId={b.id} products={products} />
+                      )}
+                    {b.sale && (
+                      <span className="subtle" style={{ fontSize: 11 }}>
+                        Products: ${(b.sale.totalCents / 100).toFixed(2)}
+                      </span>
+                    )}
                   </td>
                 </tr>
               ))}

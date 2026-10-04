@@ -14,6 +14,7 @@ type Stylist = {
   independentBilling: boolean;
   canEditOwnPricing: boolean;
   canEditOwnHours: boolean;
+  retailCommissionPct: number;
 };
 
 export default function StylistManager({
@@ -36,6 +37,11 @@ export default function StylistManager({
   );
   const [emailSaving, setEmailSaving] = useState<string | null>(null);
   const [emailError, setEmailError] = useState<Record<string, string>>({});
+
+  const [commissionDrafts, setCommissionDrafts] = useState<Record<string, string>>(
+    Object.fromEntries(initialStylists.map((s) => [s.id, String(s.retailCommissionPct)]))
+  );
+  const [commissionSaving, setCommissionSaving] = useState<string | null>(null);
 
   async function addStylist(e: React.FormEvent) {
     e.preventDefault();
@@ -85,6 +91,25 @@ export default function StylistManager({
       return;
     }
     setStylists((list) => list.map((s) => (s.id === id ? { ...s, [field]: !value } : s)));
+    router.refresh();
+  }
+
+  async function saveCommission(id: string) {
+    const raw = commissionDrafts[id] ?? "0";
+    const pct = Math.max(0, Math.min(100, Math.round(Number(raw) || 0)));
+    setCommissionSaving(id);
+    const res = await fetch(`/api/admin/stylists/${id}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ retailCommissionPct: pct }),
+    });
+    setCommissionSaving(null);
+    if (!res.ok) {
+      alert("Couldn't save that — try again.");
+      return;
+    }
+    setStylists((list) => list.map((s) => (s.id === id ? { ...s, retailCommissionPct: pct } : s)));
+    setCommissionDrafts((d) => ({ ...d, [id]: String(pct) }));
     router.refresh();
   }
 
@@ -248,6 +273,40 @@ export default function StylistManager({
                 />
                 Can change their own hours
               </label>
+            </div>
+
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 8,
+                paddingTop: 10,
+                borderTop: "1px solid rgba(36,28,31,0.08)",
+              }}
+            >
+              <label className="subtle" style={{ fontSize: 12, whiteSpace: "nowrap" }}>
+                Retail commission
+              </label>
+              <input
+                type="number"
+                min={0}
+                max={100}
+                value={commissionDrafts[s.id] ?? "0"}
+                onChange={(e) => setCommissionDrafts((d) => ({ ...d, [s.id]: e.target.value }))}
+                style={{ width: 70 }}
+              />
+              <span className="subtle" style={{ fontSize: 13 }}>%</span>
+              <button
+                className="btn-ghost"
+                style={{ padding: "6px 12px", fontSize: 12 }}
+                onClick={() => saveCommission(s.id)}
+                disabled={commissionSaving === s.id}
+              >
+                {commissionSaving === s.id ? "Saving…" : "Save"}
+              </button>
+              <p className="subtle" style={{ margin: 0, fontSize: 12 }}>
+                on products they ring up
+              </p>
             </div>
           </div>
         ))}

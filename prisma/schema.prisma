@@ -90,6 +90,8 @@ model Business {
   bookings     Booking[]
   customers    Customer[]
   photos       Photo[]
+  products     Product[]
+  sales        Sale[]
 }
 
 model Stylist {
@@ -116,6 +118,12 @@ model Stylist {
   canEditOwnPricing Boolean @default(true)
   canEditOwnHours   Boolean @default(true)
 
+  // Commission this stylist earns on retail product sales they ring up
+  // (0-100). Defaults to 0 — no commission — until the owner sets one.
+  // Snapshotted onto Sale.commissionCents at sale time so a later change
+  // here never rewrites the history of past sales.
+  retailCommissionPct Int @default(0)
+
   // Booth-renter support — both default to false (everyone stays exactly
   // as they work today unless the owner flips one of these on).
   //
@@ -139,6 +147,7 @@ model Stylist {
   availability Availability[]
   preferredByCustomers Customer[] @relation("PreferredStylist")
   serviceOverrides StylistService[]
+  sales       Sale[]
 
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
@@ -205,6 +214,7 @@ model Customer {
   noShowCount         Int      @default(0)
 
   bookings    Booking[]
+  sales       Sale[]
 
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
@@ -220,6 +230,63 @@ model Photo {
   caption     String?
   order       Int      @default(0)
   createdAt   DateTime @default(now())
+}
+
+model Product {
+  id          String   @id @default(cuid())
+  businessId  String
+  business    Business @relation(fields: [businessId], references: [id])
+  name        String
+  priceCents  Int
+  stockQty    Int      @default(0)
+  active      Boolean  @default(true)
+
+  saleItems   SaleItem[]
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+// A rung-up retail sale, always tied to whichever stylist did the
+// checkout (so it can be credited to them in reports/payouts) and
+// usually to the booking it happened at — see /api/admin/bookings/[id]/sell
+// for how this gets created, stock decremented, and the card on file
+// charged.
+model Sale {
+  id          String   @id @default(cuid())
+  businessId  String
+  business    Business @relation(fields: [businessId], references: [id])
+  bookingId   String?  @unique
+  booking     Booking? @relation(fields: [bookingId], references: [id])
+  stylistId   String
+  stylist     Stylist  @relation(fields: [stylistId], references: [id])
+  customerId  String?
+  customer    Customer? @relation(fields: [customerId], references: [id])
+
+  totalCents  Int
+
+  // Snapshot of stylist.retailCommissionPct × totalCents at the moment of
+  // sale — stored here (not recomputed later) so changing a stylist's
+  // commission rate afterward never changes what a past sale shows they
+  // earned.
+  commissionCents Int @default(0)
+
+  stripePaymentIntentId String?
+  chargedAt             DateTime?
+
+  items       SaleItem[]
+
+  createdAt   DateTime @default(now())
+}
+
+model SaleItem {
+  id             String  @id @default(cuid())
+  saleId         String
+  sale           Sale    @relation(fields: [saleId], references: [id])
+  productId      String
+  product        Product @relation(fields: [productId], references: [id])
+  quantity       Int
+  priceCentsEach Int
 }
 
 model Booking {
@@ -249,6 +316,8 @@ model Booking {
   noShowFeeChargedAt DateTime?
 
   reminderSentAt DateTime?
+
+  sale         Sale?
 
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
