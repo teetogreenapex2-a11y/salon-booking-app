@@ -40,12 +40,17 @@ export default function ServiceManager({
         priceCents: Math.round(Number(price) * 100),
       }),
     });
+    setSaving(false);
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      alert(data.error || "Couldn't add service — try signing in again and retrying.");
+      return;
+    }
     const created = await res.json();
     setServices((s) => [...s, created]);
     setName("");
     setDuration("45");
     setPrice("65");
-    setSaving(false);
     router.refresh();
   }
 

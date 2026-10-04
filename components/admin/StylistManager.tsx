@@ -42,12 +42,17 @@ export default function StylistManager({
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ businessId, name, specialty }),
     });
+    setSaving(false);
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      alert(data.error || "Couldn't add stylist — try signing in again and retrying.");
+      return;
+    }
     const created = await res.json();
     setStylists((s) => [...s, created]);
     setEmailDrafts((d) => ({ ...d, [created.id]: created.email ?? "" }));
     setName("");
     setSpecialty("");
-    setSaving(false);
     router.refresh();
   }
 

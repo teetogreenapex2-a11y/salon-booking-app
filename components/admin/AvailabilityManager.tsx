@@ -37,6 +37,7 @@ export default function AvailabilityManager({ stylists }: { stylists: Stylist[] 
   const [activeStylistId, setActiveStylistId] = useState(stylists[0]?.id);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [error, setError] = useState(false);
   const activeStylist = stylists.find((s) => s.id === activeStylistId);
   const [rows, setRows] = useState<Record<number, Row>>(() => buildRows(activeStylist));
 
@@ -50,6 +51,7 @@ export default function AvailabilityManager({ stylists }: { stylists: Stylist[] 
     if (!activeStylistId) return;
     setSaving(true);
     setSaved(false);
+    setError(false);
     const windows = Object.entries(rows)
       .filter(([, v]) => v.open)
       .map(([day, v]) => ({
@@ -58,14 +60,18 @@ export default function AvailabilityManager({ stylists }: { stylists: Stylist[] 
         endMin: timeToMin(v.end),
       }));
 
-    await fetch(`/api/admin/availability`, {
+    const res = await fetch(`/api/admin/availability`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ stylistId: activeStylistId, windows }),
     });
     setSaving(false);
-    setSaved(true);
-    router.refresh();
+    if (res.ok) {
+      setSaved(true);
+      router.refresh();
+    } else {
+      setError(true);
+    }
   }
 
   if (!activeStylist) {
@@ -131,6 +137,11 @@ export default function AvailabilityManager({ stylists }: { stylists: Stylist[] 
         {saving ? "Saving…" : "Save hours"}
       </button>
       {saved && <p className="subtle" style={{ color: "#2e7d32", marginTop: 8 }}>Saved.</p>}
+      {error && (
+        <p className="subtle" style={{ color: "#c62828", marginTop: 8 }}>
+          Couldn&rsquo;t save — try signing in again and retrying.
+        </p>
+      )}
     </div>
   );
 }
