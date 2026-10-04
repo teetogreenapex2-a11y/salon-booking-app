@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 type Business = {
   id: string;
   name: string;
+  slug: string;
   tagline: string | null;
   address: string | null;
   instagram: string | null;
@@ -22,7 +23,7 @@ export default function BusinessForm({ business }: { business: Business }) {
   });
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
-  const [error, setError] = useState(false);
+  const [error, setError] = useState<string | false>(false);
   const [logoUrl, setLogoUrl] = useState(business.logoUrl);
   const [uploadingLogo, setUploadingLogo] = useState(false);
   const logoInputRef = useRef<HTMLInputElement>(null);
@@ -65,6 +66,7 @@ export default function BusinessForm({ business }: { business: Business }) {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         name: form.name,
+        slug: form.slug,
         tagline: form.tagline,
         address: form.address,
         instagram: form.instagram,
@@ -74,10 +76,13 @@ export default function BusinessForm({ business }: { business: Business }) {
     });
     setSaving(false);
     if (res.ok) {
+      const updated = await res.json();
+      setForm((f) => ({ ...f, slug: updated.slug }));
       setSaved(true);
       router.refresh();
     } else {
-      setError(true);
+      const data = await res.json().catch(() => ({}));
+      setError(data.error || "Couldn't save — try signing in again and retrying.");
     }
   }
 
@@ -145,6 +150,24 @@ export default function BusinessForm({ business }: { business: Business }) {
           value={form.name}
           onChange={(e) => setForm({ ...form, name: e.target.value })}
         />
+        <label className="subtle" style={{ fontSize: 12, marginTop: 8 }}>
+          Booking web address
+        </label>
+        <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+          <span className="subtle" style={{ fontSize: 13, whiteSpace: "nowrap" }}>
+            hairsalonix.com/
+          </span>
+          <input
+            placeholder="studio-fern"
+            value={form.slug}
+            onChange={(e) => setForm({ ...form, slug: e.target.value })}
+            style={{ flex: 1, minWidth: 0 }}
+          />
+        </div>
+        <p className="subtle" style={{ fontSize: 12, margin: "-4px 0 4px" }}>
+          Changing this changes your booking link — any link you&rsquo;ve already shared or printed
+          with the old address will stop working.
+        </p>
         <input
           placeholder="Tagline"
           value={form.tagline ?? ""}
@@ -182,7 +205,7 @@ export default function BusinessForm({ business }: { business: Business }) {
         {saved && <p className="subtle" style={{ color: "#2e7d32" }}>Saved.</p>}
         {error && (
           <p className="subtle" style={{ color: "#c62828" }}>
-            Couldn&rsquo;t save — try signing in again and retrying.
+            {error}
           </p>
         )}
       </form>
