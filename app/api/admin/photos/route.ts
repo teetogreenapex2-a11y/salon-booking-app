@@ -29,9 +29,22 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Only image files are allowed" }, { status: 400 });
   }
 
-  const blob = await put(`gallery/${business.id}/${Date.now()}-${file.name}`, file, {
-    access: "public",
-  });
+  let blob;
+  try {
+    blob = await put(`gallery/${business.id}/${Date.now()}-${file.name}`, file, {
+      access: "public",
+    });
+  } catch (err) {
+    // Without this, a missing/misconfigured Vercel Blob store (no
+    // BLOB_READ_WRITE_TOKEN, store not connected to this project, etc.)
+    // throws here and the request just 500s with no detail — looks from
+    // the Gallery page like the upload silently did nothing.
+    console.error("[admin/photos] blob upload failed:", err);
+    return NextResponse.json(
+      { error: "Couldn't upload the photo — check that a Blob store is connected to this project in Vercel." },
+      { status: 500 }
+    );
+  }
 
   const count = await prisma.photo.count({ where: { businessId: business.id } });
 

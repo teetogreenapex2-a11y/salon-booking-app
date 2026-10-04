@@ -7,11 +7,13 @@ type Photo = { id: string; url: string; caption: string | null };
 export default function GalleryManager({ initialPhotos }: { initialPhotos: Photo[] }) {
   const [photos, setPhotos] = useState(initialPhotos);
   const [uploading, setUploading] = useState(false);
+  const [error, setError] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   async function handleFiles(files: FileList | null) {
     if (!files || files.length === 0) return;
     setUploading(true);
+    setError("");
     try {
       for (const file of Array.from(files)) {
         const formData = new FormData();
@@ -20,6 +22,9 @@ export default function GalleryManager({ initialPhotos }: { initialPhotos: Photo
         if (res.ok) {
           const photo = await res.json();
           setPhotos((prev) => [...prev, photo]);
+        } else {
+          const data = await res.json().catch(() => ({}));
+          setError(data.error || `Couldn't upload "${file.name}" — try again.`);
         }
       }
     } finally {
@@ -49,6 +54,12 @@ export default function GalleryManager({ initialPhotos }: { initialPhotos: Photo
           style={{ display: "none" }}
         />
       </label>
+
+      {error && (
+        <p className="subtle" style={{ color: "#b00020", marginBottom: 16 }}>
+          {error}
+        </p>
+      )}
 
       {photos.length === 0 ? (
         <p className="subtle">No photos yet — add some to show off your work.</p>
