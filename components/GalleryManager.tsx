@@ -16,15 +16,25 @@ export default function GalleryManager({ initialPhotos }: { initialPhotos: Photo
     setError("");
     try {
       for (const file of Array.from(files)) {
-        const formData = new FormData();
-        formData.append("file", file);
-        const res = await fetch("/api/admin/photos", { method: "POST", body: formData });
-        if (res.ok) {
-          const photo = await res.json();
-          setPhotos((prev) => [...prev, photo]);
-        } else {
-          const data = await res.json().catch(() => ({}));
-          setError(data.error || `Couldn't upload "${file.name}" — try again.`);
+        try {
+          const formData = new FormData();
+          formData.append("file", file);
+          const res = await fetch("/api/admin/photos", { method: "POST", body: formData });
+          const data = await res.json().catch(() => null);
+          if (res.ok && data) {
+            setPhotos((prev) => [...prev, data]);
+          } else {
+            setError(
+              (data && data.error) ||
+                `Couldn't upload "${file.name}" (server said ${res.status}) — try again.`
+            );
+          }
+        } catch (err) {
+          // Catches anything the branch above can't: a dropped connection,
+          // the request failing before it even gets a response, etc. —
+          // without this, that case showed nothing at all.
+          console.error("[gallery] upload request failed:", err);
+          setError(`Couldn't upload "${file.name}" — check your connection and try again.`);
         }
       }
     } finally {
