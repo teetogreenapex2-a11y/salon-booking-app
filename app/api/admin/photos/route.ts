@@ -40,8 +40,9 @@ export async function POST(req: NextRequest) {
     // throws here and the request just 500s with no detail — looks from
     // the Gallery page like the upload silently did nothing.
     console.error("[admin/photos] blob upload failed:", err);
+    const detail = err instanceof Error ? err.message : String(err);
     return NextResponse.json(
-      { error: "Couldn't upload the photo — check that a Blob store is connected to this project in Vercel." },
+      { error: `Couldn't upload the photo — ${detail}` },
       { status: 500 }
     );
   }
