@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { signIn } from "next-auth/react";
+import Link from "next/link";
 
 export default function LoginPage() {
   const [mode, setMode] = useState<"email" | "password">("email");
@@ -110,6 +111,9 @@ export default function LoginPage() {
             <button type="button" onClick={() => setMode("email")} className="link-btn">
               Use an email link instead
             </button>
+          </p>
+          <p style={{ marginTop: 8 }}>
+            <Link href="/login/forgot-password">Forgot your password?</Link>
           </p>
         </>
       )}
