@@ -18,11 +18,19 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
   if (business) {
     businessId = business.id;
   } else {
-    const stylist = await getCurrentStylist();
-    if (!stylist || stylist.id !== params.id) {
+    const signedInStylist = await getCurrentStylist();
+    if (!signedInStylist || signedInStylist.id !== params.id) {
       return NextResponse.json({ error: "Not signed in" }, { status: 401 });
     }
-    businessId = stylist.businessId;
+    // The owner can always edit any stylist's pricing — this check only
+    // applies when a stylist account is editing its OWN pricing.
+    if (!signedInStylist.canEditOwnPricing) {
+      return NextResponse.json(
+        { error: "The salon owner has turned off pricing changes for your account." },
+        { status: 403 }
+      );
+    }
+    businessId = signedInStylist.businessId;
   }
 
   const stylist = await prisma.stylist.findFirst({

@@ -26,7 +26,7 @@ export default async function AvailabilityPage() {
       <h1 className="display" style={{ fontSize: 26, marginBottom: 20 }}>
         Hours
       </h1>
-      <AvailabilityManager stylists={stylists} />
+      <AvailabilityManager stylists={stylists} viewerRole={access.role} />
     </div>
   );
 }

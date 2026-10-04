@@ -12,10 +12,12 @@ export default function StylistPricingForm({
   stylistId,
   services,
   overrides,
+  locked = false,
 }: {
   stylistId: string;
   services: Service[];
   overrides: Override[];
+  locked?: boolean;
 }) {
   const router = useRouter();
 
@@ -48,6 +50,7 @@ export default function StylistPricingForm({
   }
 
   async function save() {
+    if (locked) return;
     setSaving(true);
     setSaved(false);
     const payload = rows.map((r) =>
@@ -74,7 +77,15 @@ export default function StylistPricingForm({
 
   return (
     <div>
-      <div className="list" style={{ marginBottom: 20 }}>
+      {locked && (
+        <p
+          className="subtle"
+          style={{ marginBottom: 16, color: "#b3563e", fontWeight: 500 }}
+        >
+          Your salon owner has turned off pricing changes for your account — this is read-only.
+        </p>
+      )}
+      <div className="list" style={{ marginBottom: 20, opacity: locked ? 0.6 : 1 }}>
         {services.map((s) => {
           const row = rows.find((r) => r.serviceId === s.id)!;
           return (
@@ -85,6 +96,7 @@ export default function StylistPricingForm({
                   <input
                     type="checkbox"
                     checked={!row.offered}
+                    disabled={locked}
                     onChange={(e) => toggleOffered(s.id, !e.target.checked)}
                   />
                   I don&rsquo;t do this service
@@ -105,6 +117,7 @@ export default function StylistPricingForm({
                         min="0"
                         placeholder={`${(s.priceCents / 100).toFixed(0)}`}
                         value={row.price}
+                        disabled={locked}
                         onChange={(e) => updateRow(s.id, "price", e.target.value)}
                       />
                     </label>
@@ -118,6 +131,7 @@ export default function StylistPricingForm({
                         step="5"
                         placeholder={`${s.durationMin}`}
                         value={row.duration}
+                        disabled={locked}
                         onChange={(e) => updateRow(s.id, "duration", e.target.value)}
                       />
                     </label>
@@ -134,7 +148,7 @@ export default function StylistPricingForm({
         {services.length === 0 && <p className="subtle">No services yet — add some under Services first.</p>}
       </div>
 
-      <button className="btn-primary" onClick={save} disabled={saving || services.length === 0}>
+      <button className="btn-primary" onClick={save} disabled={locked || saving || services.length === 0}>
         {saving ? "Saving…" : "Save pricing"}
       </button>
       {saved && (

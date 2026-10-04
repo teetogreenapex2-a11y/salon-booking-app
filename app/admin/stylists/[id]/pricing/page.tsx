@@ -22,6 +22,10 @@ export default async function StylistPricingPage({ params }: { params: { id: str
   });
   if (!stylist) notFound();
 
+  // Only applies to a stylist editing their OWN pricing — the owner can
+  // always edit anyone's.
+  const locked = access.role === "stylist" && !stylist.canEditOwnPricing;
+
   const services = await prisma.service.findMany({
     where: { businessId: business.id, active: true },
     orderBy: { name: "asc" },
@@ -46,7 +50,7 @@ export default async function StylistPricingPage({ params }: { params: { id: str
         Leave a field blank to use the business&rsquo;s standard price or duration for a service, or check
         &ldquo;I don&rsquo;t do this service&rdquo; to hide it entirely from customers booking with this stylist.
       </p>
-      <StylistPricingForm stylistId={stylist.id} services={services} overrides={overrides} />
+      <StylistPricingForm stylistId={stylist.id} services={services} overrides={overrides} locked={locked} />
     </div>
   );
 }

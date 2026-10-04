@@ -28,6 +28,14 @@ export async function PUT(req: NextRequest) {
     if (!stylist || stylist.id !== stylistId) {
       return NextResponse.json({ error: "Not signed in" }, { status: 401 });
     }
+    // The owner can always edit any stylist's hours — this only applies
+    // when a stylist account is editing its OWN hours.
+    if (!stylist.canEditOwnHours) {
+      return NextResponse.json(
+        { error: "The salon owner has turned off hours changes for your account." },
+        { status: 403 }
+      );
+    }
   }
 
   await prisma.availability.deleteMany({ where: { stylistId } });

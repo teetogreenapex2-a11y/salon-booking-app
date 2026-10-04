@@ -12,6 +12,8 @@ type Stylist = {
   email: string | null;
   independentPayouts: boolean;
   independentBilling: boolean;
+  canEditOwnPricing: boolean;
+  canEditOwnHours: boolean;
 };
 
 export default function StylistManager({
@@ -68,7 +70,11 @@ export default function StylistManager({
     router.refresh();
   }
 
-  async function toggleBoothRenter(id: string, field: "independentPayouts" | "independentBilling", value: boolean) {
+  async function toggleFlag(
+    id: string,
+    field: "independentPayouts" | "independentBilling" | "canEditOwnPricing" | "canEditOwnHours",
+    value: boolean
+  ) {
     const res = await fetch(`/api/admin/stylists/${id}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
@@ -194,7 +200,7 @@ export default function StylistManager({
                 <input
                   type="checkbox"
                   checked={s.independentPayouts}
-                  onChange={() => toggleBoothRenter(s.id, "independentPayouts", s.independentPayouts)}
+                  onChange={() => toggleFlag(s.id, "independentPayouts", s.independentPayouts)}
                 />
                 Gets their own Stripe account for payouts (today&rsquo;s no-show-fee auto-charge still goes
                 to your account — ask me to extend that once someone actually needs it)
@@ -203,7 +209,7 @@ export default function StylistManager({
                 <input
                   type="checkbox"
                   checked={s.independentBilling}
-                  onChange={() => toggleBoothRenter(s.id, "independentBilling", s.independentBilling)}
+                  onChange={() => toggleFlag(s.id, "independentBilling", s.independentBilling)}
                 />
                 Pays Hairsalonix directly for their own seat (won&rsquo;t show up on your bill)
               </label>
@@ -212,6 +218,36 @@ export default function StylistManager({
                   Set a login email above so {s.name.split(" ")[0]} can sign in and finish their own Stripe setup.
                 </p>
               )}
+            </div>
+
+            <div
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                gap: 6,
+                paddingTop: 10,
+                borderTop: "1px solid rgba(36,28,31,0.08)",
+              }}
+            >
+              <p className="subtle" style={{ fontSize: 12, fontWeight: 600, margin: 0 }}>
+                Permissions
+              </p>
+              <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13 }}>
+                <input
+                  type="checkbox"
+                  checked={s.canEditOwnPricing}
+                  onChange={() => toggleFlag(s.id, "canEditOwnPricing", s.canEditOwnPricing)}
+                />
+                Can change their own pricing
+              </label>
+              <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13 }}>
+                <input
+                  type="checkbox"
+                  checked={s.canEditOwnHours}
+                  onChange={() => toggleFlag(s.id, "canEditOwnHours", s.canEditOwnHours)}
+                />
+                Can change their own hours
+              </label>
             </div>
           </div>
         ))}

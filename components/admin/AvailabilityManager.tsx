@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 
 type Availability = { id: string; dayOfWeek: number; startMin: number; endMin: number };
-type Stylist = { id: string; name: string; availability: Availability[] };
+type Stylist = { id: string; name: string; availability: Availability[]; canEditOwnHours?: boolean };
 
 const DAYS = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
 
@@ -32,7 +32,13 @@ function buildRows(stylist?: Stylist): Record<number, Row> {
   return initial;
 }
 
-export default function AvailabilityManager({ stylists }: { stylists: Stylist[] }) {
+export default function AvailabilityManager({
+  stylists,
+  viewerRole = "owner",
+}: {
+  stylists: Stylist[];
+  viewerRole?: "owner" | "stylist";
+}) {
   const router = useRouter();
   const [activeStylistId, setActiveStylistId] = useState(stylists[0]?.id);
   const [saving, setSaving] = useState(false);
@@ -41,6 +47,11 @@ export default function AvailabilityManager({ stylists }: { stylists: Stylist[] 
   const activeStylist = stylists.find((s) => s.id === activeStylistId);
   const [rows, setRows] = useState<Record<number, Row>>(() => buildRows(activeStylist));
 
+  // The owner can always edit any stylist's hours — this only locks the
+  // form when a stylist account is viewing its OWN hours and the owner
+  // has turned that off.
+  const locked = viewerRole === "stylist" && activeStylist?.canEditOwnHours === false;
+
   function selectStylist(id: string) {
     setActiveStylistId(id);
     setRows(buildRows(stylists.find((s) => s.id === id)));
@@ -48,7 +59,7 @@ export default function AvailabilityManager({ stylists }: { stylists: Stylist[] 
   }
 
   async function save() {
-    if (!activeStylistId) return;
+    if (!activeStylistId || locked) return;
     setSaving(true);
     setSaved(false);
     setError(false);
@@ -93,13 +104,20 @@ export default function AvailabilityManager({ stylists }: { stylists: Stylist[] 
         ))}
       </div>
 
-      <div className="list" style={{ maxWidth: 480 }}>
+      {locked && (
+        <p className="subtle" style={{ marginBottom: 16, color: "#b3563e", fontWeight: 500 }}>
+          Your salon owner has turned off hours changes for your account — this is read-only.
+        </p>
+      )}
+
+      <div className="list" style={{ maxWidth: 480, opacity: locked ? 0.6 : 1 }}>
         {DAYS.map((label, d) => (
           <div key={d} className="card static" style={{ justifyContent: "space-between", gap: 12 }}>
             <label style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 110 }}>
               <input
                 type="checkbox"
                 checked={rows[d].open}
+                disabled={locked}
                 onChange={(e) =>
                   setRows((r) => ({ ...r, [d]: { ...r[d], open: e.target.checked } }))
                 }
@@ -111,6 +129,7 @@ export default function AvailabilityManager({ stylists }: { stylists: Stylist[] 
                 <input
                   type="time"
                   value={rows[d].start}
+                  disabled={locked}
                   onChange={(e) =>
                     setRows((r) => ({ ...r, [d]: { ...r[d], start: e.target.value } }))
                   }
@@ -118,6 +137,7 @@ export default function AvailabilityManager({ stylists }: { stylists: Stylist[] 
                 <input
                   type="time"
                   value={rows[d].end}
+                  disabled={locked}
                   onChange={(e) =>
                     setRows((r) => ({ ...r, [d]: { ...r[d], end: e.target.value } }))
                   }
@@ -132,7 +152,7 @@ export default function AvailabilityManager({ stylists }: { stylists: Stylist[] 
         className="btn-primary"
         style={{ marginTop: 20, width: "auto", padding: "12px 24px" }}
         onClick={save}
-        disabled={saving}
+        disabled={locked || saving}
       >
         {saving ? "Saving…" : "Save hours"}
       </button>

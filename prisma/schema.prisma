@@ -110,6 +110,12 @@ model Stylist {
   googleRefreshToken  String?
   outlookRefreshToken String?
 
+  // Owner-controlled permissions — both default to true so nothing
+  // changes for anyone until the owner deliberately turns one off on the
+  // Stylists page.
+  canEditOwnPricing Boolean @default(true)
+  canEditOwnHours   Boolean @default(true)
+
   // Booth-renter support — both default to false (everyone stays exactly
   // as they work today unless the owner flips one of these on).
   //
