@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { notFound } from "next/navigation";
 import { MapPin, Scissors } from "lucide-react";
+import { venmoUrl, cashAppUrl, hasAnyHandle } from "@/lib/paymentHandles";
 
 export const dynamic = "force-dynamic";
 
@@ -22,6 +23,15 @@ export default async function BookingDetailsPage({
   });
 
   if (!booking) notFound();
+
+  // Optional pay-outside-the-app card — only shown while the booking is
+  // still live, hasn't been marked paid, and the stylist set something up.
+  const stylist = booking.stylist;
+  const showPay =
+    (booking.status === "CONFIRMED" || booking.status === "COMPLETED") &&
+    !booking.paidOutsideAt &&
+    hasAnyHandle(stylist);
+  const payNote = `${booking.service.name} with ${stylist.name}`;
 
   return (
     <main className="page">
@@ -58,6 +68,48 @@ export default async function BookingDetailsPage({
         <Row label="Stylist" value={booking.stylist.name} />
         {booking.business.address && <Row label="Location" value={booking.business.address} />}
       </div>
+
+      {booking.paidOutsideAt && (
+        <p className="subtle" style={{ marginTop: 18 }}>
+          Paid{booking.paidOutsideMethod ? ` · ${booking.paidOutsideMethod}` : ""}. Thank you!
+        </p>
+      )}
+
+      {showPay && (
+        <div className="card static" style={{ flexDirection: "column", alignItems: "stretch", gap: 8, marginTop: 18 }}>
+          <p className="name" style={{ margin: 0 }}>
+            Prefer to pay {stylist.name.split(" ")[0]} with Venmo, Cash App or Zelle?
+          </p>
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+            {stylist.venmoHandle && (
+              <a
+                className="btn-ghost"
+                style={{ padding: "8px 14px", fontSize: 13 }}
+                href={venmoUrl(stylist.venmoHandle, booking.priceCents, payNote)}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                Pay with Venmo
+              </a>
+            )}
+            {stylist.cashAppHandle && (
+              <a
+                className="btn-ghost"
+                style={{ padding: "8px 14px", fontSize: 13 }}
+                href={cashAppUrl(stylist.cashAppHandle, booking.priceCents)}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                Pay with Cash App
+              </a>
+            )}
+          </div>
+          {stylist.zelleInfo && <p className="subtle" style={{ margin: 0 }}>Zelle: {stylist.zelleInfo}</p>}
+          <p className="subtle" style={{ margin: 0, fontSize: 12 }}>
+            Optional — you can also just pay at your appointment.
+          </p>
+        </div>
+      )}
 
       {booking.business.address && (
         <a

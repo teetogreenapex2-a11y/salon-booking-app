@@ -11,6 +11,7 @@ function linksFor(stylistId: string | null, isBoothRenter: boolean) {
     { href: "/admin/calendar", label: "Calendar" },
     { href: "/admin/reports", label: "Reports" },
     { href: "/admin/availability", label: "My hours" },
+    { href: "/admin/get-paid", label: "Get paid" },
   ];
   if (stylistId) {
     links.push({ href: `/admin/stylists/${stylistId}/pricing`, label: "My pricing" });

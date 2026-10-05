@@ -124,6 +124,12 @@ model Stylist {
   // here never rewrites the history of past sales.
   retailCommissionPct Int @default(0)
 
+  // Optional "pay outside the app" handles. Display/link only — Hairsalonix
+  // never touches this money. Stored without the leading @ or $.
+  venmoHandle   String?
+  cashAppHandle String?
+  zelleInfo     String?
+
   // Booth-renter support — both default to false (everyone stays exactly
   // as they work today unless the owner flips one of these on).
   //
@@ -345,6 +351,11 @@ model Booking {
   stripePaymentIntentId String?
 
   noShowFeeChargedAt DateTime?
+
+  // Set when the owner records that the customer paid outside the app
+  // (Venmo, Cash App, Zelle, cash). A record only — no money moves here.
+  paidOutsideAt     DateTime?
+  paidOutsideMethod String?
 
   reminderSentAt DateTime?
 

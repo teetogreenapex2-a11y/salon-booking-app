@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getCurrentBusiness } from "@/lib/auth";
 import { syncStylistSubscriptionQuantity } from "@/lib/stripe";
+import { cleanHandle, cleanZelle, HANDLE_ERROR } from "@/lib/paymentHandles";
 
 // Checks the stylist belongs to the logged-in user's business before
 // updating — otherwise anyone signed in could edit any stylist in the
@@ -20,6 +21,17 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
   }
 
   const data = await req.json();
+
+  // Payment handles are shown to customers as links, so they're cleaned
+  // and validated before they're saved (see lib/paymentHandles.ts).
+  for (const key of ["venmoHandle", "cashAppHandle"] as const) {
+    if (key in data) {
+      const result = cleanHandle(data[key]);
+      if (!result.ok) return NextResponse.json({ error: HANDLE_ERROR }, { status: 400 });
+      data[key] = result.value;
+    }
+  }
+  if ("zelleInfo" in data) data.zelleInfo = cleanZelle(data.zelleInfo);
 
   let stylist;
   try {

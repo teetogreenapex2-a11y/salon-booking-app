@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { sendSms } from "@/lib/sms";
 import { sendEmail } from "@/lib/email";
 import { getEffectiveServiceInfo } from "@/lib/pricing";
+import { payEmailBlock } from "@/lib/paymentHandles";
 
 export async function POST(req: NextRequest) {
   const body = await req.json();
@@ -86,13 +87,25 @@ export async function POST(req: NextRequest) {
     );
   }
 
+  // Optional "pay with Venmo / Cash App / Zelle" block — empty (so the
+  // email is unchanged) unless this stylist has set something up.
+  const stylistRecord = await prisma.stylist.findUnique({ where: { id: stylistId } });
+  const payBlock = stylistRecord
+    ? payEmailBlock(
+        stylistRecord,
+        info.priceCents,
+        `${info.service.name} with ${stylistRecord.name}`,
+        stylistRecord.name.split(" ")[0]
+      )
+    : "";
+
   sendEmail(
     customer.email,
     `You're booked with ${business.name}`,
     `
       <p>Hi ${customer.name},</p>
       <p>You're booked with <strong>${business.name}</strong> for <strong>${when}</strong>.</p>
-      <p><a href="${link}">View your appointment details</a></p>
+      <p><a href="${link}">View your appointment details</a></p>${payBlock}
     `
   ).catch((err) => console.error("Booking confirmation email failed", err));
 

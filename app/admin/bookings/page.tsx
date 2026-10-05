@@ -5,6 +5,7 @@ import CancelBookingButton from "@/components/CancelBookingButton";
 import MarkNoShowButton from "@/components/admin/MarkNoShowButton";
 import ChargeNoShowFeeButton from "@/components/admin/ChargeNoShowFeeButton";
 import SellProductsButton from "@/components/admin/SellProductsButton";
+import CollectPaymentButton from "@/components/admin/CollectPaymentButton";
 
 export const dynamic = "force-dynamic";
 
@@ -103,6 +104,17 @@ export default async function BookingsPage() {
                     )}
                     {b.status !== "CANCELLED" && !b.sale && hasCard && products.length > 0 && (
                       <SellProductsButton bookingId={b.id} products={products} />
+                    )}
+                    {b.status !== "CANCELLED" && b.status !== "NO_SHOW" && (
+                      <CollectPaymentButton
+                        bookingId={b.id}
+                        totalCents={b.priceCents + (b.sale?.totalCents ?? 0)}
+                        note={`${b.service.name} with ${b.stylist.name}`}
+                        venmoHandle={b.stylist.venmoHandle}
+                        cashAppHandle={b.stylist.cashAppHandle}
+                        zelleInfo={b.stylist.zelleInfo}
+                        paidMethod={b.paidOutsideMethod}
+                      />
                     )}
                     {b.sale && (
                       <span className="subtle" style={{ fontSize: 11 }}>

@@ -15,6 +15,9 @@ type Stylist = {
   canEditOwnPricing: boolean;
   canEditOwnHours: boolean;
   retailCommissionPct: number;
+  venmoHandle: string | null;
+  cashAppHandle: string | null;
+  zelleInfo: string | null;
 };
 
 export default function StylistManager({
@@ -42,6 +45,58 @@ export default function StylistManager({
     Object.fromEntries(initialStylists.map((s) => [s.id, String(s.retailCommissionPct)]))
   );
   const [commissionSaving, setCommissionSaving] = useState<string | null>(null);
+
+  // Per-row drafts for the "other ways to pay" handles.
+  const [payDrafts, setPayDrafts] = useState<
+    Record<string, { venmo: string; cashApp: string; zelle: string }>
+  >(
+    Object.fromEntries(
+      initialStylists.map((s) => [
+        s.id,
+        { venmo: s.venmoHandle ?? "", cashApp: s.cashAppHandle ?? "", zelle: s.zelleInfo ?? "" },
+      ])
+    )
+  );
+  const [paySaving, setPaySaving] = useState<string | null>(null);
+  const [payError, setPayError] = useState<Record<string, string>>({});
+
+  function setPayDraft(id: string, key: "venmo" | "cashApp" | "zelle", value: string) {
+    setPayDrafts((d) => ({ ...d, [id]: { ...d[id], [key]: value } }));
+  }
+
+  async function savePayHandles(id: string) {
+    const d = payDrafts[id];
+    setPaySaving(id);
+    setPayError((e) => ({ ...e, [id]: "" }));
+    const res = await fetch(`/api/admin/stylists/${id}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ venmoHandle: d.venmo, cashAppHandle: d.cashApp, zelleInfo: d.zelle }),
+    });
+    setPaySaving(null);
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      setPayError((e) => ({ ...e, [id]: data.error || "Couldn't save that." }));
+      return;
+    }
+    const updated = await res.json();
+    setStylists((list) =>
+      list.map((s) =>
+        s.id === id
+          ? { ...s, venmoHandle: updated.venmoHandle, cashAppHandle: updated.cashAppHandle, zelleInfo: updated.zelleInfo }
+          : s
+      )
+    );
+    setPayDrafts((all) => ({
+      ...all,
+      [id]: {
+        venmo: updated.venmoHandle ?? "",
+        cashApp: updated.cashAppHandle ?? "",
+        zelle: updated.zelleInfo ?? "",
+      },
+    }));
+    router.refresh();
+  }
 
   async function addStylist(e: React.FormEvent) {
     e.preventDefault();
@@ -307,6 +362,65 @@ export default function StylistManager({
               <p className="subtle" style={{ margin: 0, fontSize: 12 }}>
                 on products they ring up
               </p>
+            </div>
+
+            <div
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                gap: 6,
+                paddingTop: 10,
+                borderTop: "1px solid rgba(36,28,31,0.08)",
+              }}
+            >
+              <p className="subtle" style={{ fontSize: 12, fontWeight: 600, margin: 0 }}>
+                Other ways to pay (optional)
+              </p>
+              <p className="subtle" style={{ margin: 0, fontSize: 12 }}>
+                For customers who pay {s.name.split(" ")[0]} with Venmo, Cash App or Zelle instead of a
+                card. You&rsquo;ll get a pay link on the Bookings page. Hairsalonix doesn&rsquo;t handle
+                this money — you just mark the booking paid.
+              </p>
+              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                <label className="subtle" style={{ fontSize: 12, width: 70 }}>Venmo</label>
+                <input
+                  placeholder="username (no @)"
+                  value={payDrafts[s.id]?.venmo ?? ""}
+                  onChange={(e) => setPayDraft(s.id, "venmo", e.target.value)}
+                  style={{ flex: 1, minWidth: 0 }}
+                />
+              </div>
+              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                <label className="subtle" style={{ fontSize: 12, width: 70 }}>Cash App</label>
+                <input
+                  placeholder="$cashtag (no $)"
+                  value={payDrafts[s.id]?.cashApp ?? ""}
+                  onChange={(e) => setPayDraft(s.id, "cashApp", e.target.value)}
+                  style={{ flex: 1, minWidth: 0 }}
+                />
+              </div>
+              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                <label className="subtle" style={{ fontSize: 12, width: 70 }}>Zelle</label>
+                <input
+                  placeholder="phone or email"
+                  value={payDrafts[s.id]?.zelle ?? ""}
+                  onChange={(e) => setPayDraft(s.id, "zelle", e.target.value)}
+                  style={{ flex: 1, minWidth: 0 }}
+                />
+              </div>
+              <div>
+                <button
+                  className="btn-ghost"
+                  style={{ padding: "6px 12px", fontSize: 12 }}
+                  onClick={() => savePayHandles(s.id)}
+                  disabled={paySaving === s.id}
+                >
+                  {paySaving === s.id ? "Saving…" : "Save payment options"}
+                </button>
+              </div>
+              {payError[s.id] && (
+                <p className="subtle" style={{ color: "#b00020", margin: 0 }}>{payError[s.id]}</p>
+              )}
             </div>
           </div>
         ))}
