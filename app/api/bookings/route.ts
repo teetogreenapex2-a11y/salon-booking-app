@@ -8,6 +8,7 @@ import { payEmailBlock } from "@/lib/paymentHandles";
 export async function POST(req: NextRequest) {
   const body = await req.json();
   const { businessSlug, serviceId, stylistId, startsAt, customer, customerId } = body;
+  const smsConsent = body.smsConsent === true;
 
   if (!businessSlug || !serviceId || !stylistId || !startsAt || !customer?.name || !customer?.email) {
     return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
@@ -67,6 +68,7 @@ export async function POST(req: NextRequest) {
       customerName: customer.name,
       customerEmail: customer.email,
       customerPhone: customer.phone || null,
+      smsConsent,
     },
   });
 
@@ -81,7 +83,7 @@ export async function POST(req: NextRequest) {
   });
 
   const phone = customer.phone || customerRecord?.phone;
-  if (phone) {
+  if (phone && smsConsent) {
     sendSms(phone, `${business.name}: You're booked for ${when}. Details: ${link}`).catch((err) =>
       console.error("Booking confirmation SMS failed", err)
     );

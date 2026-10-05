@@ -10,7 +10,7 @@ export default function PrivacyPolicy() {
 
       <Section title="Who we are">
         <p>
-          Hairsalonix ("Hairsalonix," "we," "us") provides online booking software that salons and
+          Hairsalonix ("Hairsalonix," "we," "us"), operated by Tee to Green Golf, provides online booking software that salons and
           independent stylists ("businesses") use to run their own scheduling pages. This policy covers
           both the businesses that use Hairsalonix and the customers who book appointments through a
           Hairsalonix-powered booking page.
@@ -45,11 +45,11 @@ export default function PrivacyPolicy() {
 
       <Section title="Text messages (SMS)">
         <p>
-          If you provide a phone number when booking an appointment, you may receive appointment
+          If you provide a phone number when booking an appointment and tick the text-message consent box, you may receive appointment
           confirmation and reminder text messages from the business you booked with, sent through our
           platform. Message and data rates may apply. Reply <strong>STOP</strong> to any message to stop
-          receiving texts, or <strong>HELP</strong> for help. We do not sell or share phone numbers with
-          third parties for marketing purposes.
+          receiving texts, or <strong>HELP</strong> for help. We do not sell or share your SMS opt-in
+          data or personal information with third parties for marketing purposes.
         </p>
       </Section>
 

@@ -14,8 +14,8 @@ export default function TermsAndConditions() {
 
       <Section title="Program description">
         <p>
-          Hairsalonix provides online booking software for salons and independent stylists. When you
-          book an appointment through a Hairsalonix-powered booking page and provide your phone number,
+          Hairsalonix, operated by Tee to Green Golf, provides online booking software for salons and independent stylists. When you
+          book an appointment through a Hairsalonix-powered booking page and provide your phone number and tick the text-message consent box,
           the business you booked with may send you text messages confirming your appointment and
           reminding you of it before your scheduled time.
         </p>
@@ -44,6 +44,14 @@ export default function TermsAndConditions() {
         <p>
           For support, email{" "}
           <a href="mailto:teetogreenapex2@gmail.com">teetogreenapex2@gmail.com</a>.
+        </p>
+      </Section>
+
+      <Section title="Carriers and privacy">
+        <p>
+          Carriers are not liable for delayed or undelivered messages. Consent to receive text messages is
+          not a condition of booking. See our <a href="/privacy">Privacy Policy</a> for how we handle your
+          information.
         </p>
       </Section>
 

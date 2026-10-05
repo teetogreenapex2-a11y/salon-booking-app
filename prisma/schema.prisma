@@ -350,6 +350,7 @@ model Booking {
   customerName  String
   customerEmail String
   customerPhone String?
+  smsConsent    Boolean  @default(false)
 
   startsAt     DateTime
   endsAt       DateTime

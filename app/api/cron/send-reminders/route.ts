@@ -39,7 +39,7 @@ export async function GET(req: NextRequest) {
       minute: "2-digit",
     });
 
-    if (booking.customerPhone) {
+    if (booking.customerPhone && booking.smsConsent) {
       await sendSms(
         booking.customerPhone,
         `Reminder from ${booking.business.name}: your ${booking.service.name} appointment is ${when}. Details: ${link}`

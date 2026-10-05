@@ -42,6 +42,7 @@ export default function BookingFlow({
   const [loadingSlots, setLoadingSlots] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [customer, setCustomer] = useState({ name: "", email: "", phone: "" });
+  const [smsConsent, setSmsConsent] = useState(false);
   const [pendingStartMin, setPendingStartMin] = useState<number | null>(null);
 
   const week = useMemo(() => buildWeek(weekOffset), [weekOffset]);
@@ -117,6 +118,7 @@ export default function BookingFlow({
         startsAt: startsAt.toISOString(),
         customer,
         customerId,
+        smsConsent,
       }),
     });
 
@@ -178,7 +180,7 @@ export default function BookingFlow({
         {effectiveDurationMin ? ` · ${effectiveDurationMin} min` : ""}
       </p>
 
-      <CustomerForm customer={customer} onChange={setCustomer} />
+      <CustomerForm customer={customer} onChange={setCustomer} smsConsent={smsConsent} onSmsConsent={setSmsConsent} />
 
       <div className="week-nav" style={{ marginTop: 24 }}>
         <button className="icon-btn" onClick={() => changeWeek(-7)} disabled={weekOffset === 0}>
@@ -298,9 +300,13 @@ function SelectStep({
 function CustomerForm({
   customer,
   onChange,
+  smsConsent,
+  onSmsConsent,
 }: {
   customer: { name: string; email: string; phone: string };
   onChange: (c: { name: string; email: string; phone: string }) => void;
+  smsConsent: boolean;
+  onSmsConsent: (v: boolean) => void;
 }) {
   return (
     <div className="customer-form">
@@ -322,6 +328,22 @@ function CustomerForm({
         value={customer.phone}
         onChange={(e) => onChange({ ...customer, phone: e.target.value })}
       />
+      <label style={{ display: "flex", gap: 8, alignItems: "flex-start", fontSize: 12, marginTop: 8, lineHeight: 1.5 }}>
+        <input
+          type="checkbox"
+          checked={smsConsent}
+          onChange={(e) => onSmsConsent(e.target.checked)}
+          style={{ width: "auto", marginTop: 3, flexShrink: 0 }}
+        />
+        <span>
+          Text me appointment confirmation and reminder messages about my booking. Sent through
+          Hairsalonix on behalf of the business I'm booking with, which is operated by Tee to Green Golf.
+          Message frequency varies (about 1 confirmation and 1 reminder per appointment). Msg &amp; data
+          rates may apply. Reply HELP for help, STOP to opt out. Consent is not required to book. See our{" "}
+          <a href="/terms" target="_blank" rel="noreferrer">Terms</a> and{" "}
+          <a href="/privacy" target="_blank" rel="noreferrer">Privacy Policy</a>.
+        </span>
+      </label>
       <p className="subtle" style={{ fontSize: 12, marginTop: 6 }}>
         Fill this in, then pick a time below.
       </p>

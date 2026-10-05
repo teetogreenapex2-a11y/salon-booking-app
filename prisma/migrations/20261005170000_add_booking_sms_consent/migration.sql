@@ -1,0 +1,1 @@
+ALTER TABLE "Booking" ADD COLUMN "smsConsent" BOOLEAN NOT NULL DEFAULT false;
