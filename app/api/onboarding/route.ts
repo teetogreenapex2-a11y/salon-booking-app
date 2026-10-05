@@ -21,6 +21,16 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "User not found" }, { status: 404 });
   }
 
+  const asMember = await prisma.businessMember.findUnique({
+    where: { email: user.email.toLowerCase() },
+  });
+  if (asMember) {
+    return NextResponse.json(
+      { error: "You've been added as a co-owner of an existing business — just go to your dashboard." },
+      { status: 409 }
+    );
+  }
+
   const existing = await prisma.business.findUnique({ where: { ownerId: user.id } });
   if (existing) {
     return NextResponse.json({ error: "You already have a business set up" }, { status: 409 });

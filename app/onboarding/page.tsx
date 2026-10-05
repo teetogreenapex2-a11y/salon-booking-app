@@ -21,6 +21,15 @@ export default async function OnboardingPage() {
     redirect("/admin");
   }
 
+  // Invited as a co-owner of someone else's business — nothing to set up,
+  // they go straight in.
+  const asMember = await prisma.businessMember.findUnique({
+    where: { email: session.user!.email!.toLowerCase() },
+  });
+  if (asMember) {
+    redirect("/admin");
+  }
+
   return (
     <main className="page" style={{ maxWidth: 480 }}>
       <h1 className="display title">Set up your business</h1>

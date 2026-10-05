@@ -5,6 +5,16 @@ export const metadata = {
   title: "Book an appointment",
 };
 
+// viewport-fit=cover lets the bottom tab bar's safe-area padding actually
+// apply on phones with a home indicator; without it env(safe-area-inset-*)
+// is always 0 and the bar sits cramped against the bottom edge.
+export const viewport = {
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
+  themeColor: "#ffffff",
+};
+
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">

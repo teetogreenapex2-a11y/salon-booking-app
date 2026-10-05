@@ -2,9 +2,26 @@ export const dynamic = "force-dynamic";
 import { prisma } from "@/lib/prisma";
 import { requireOwner } from "@/lib/access";
 import Link from "next/link";
+import SetupChecklist from "@/components/admin/SetupChecklist";
+import SetupQuiz from "@/components/admin/SetupQuiz";
+import { ownerSetupSteps } from "@/lib/setup";
+import { parseAnswers } from "@/lib/setupQuestions";
 
-export default async function AdminDashboard() {
+export default async function AdminDashboard({
+  searchParams,
+}: {
+  searchParams: { quiz?: string };
+}) {
   const business = await requireOwner();
+
+  // First visit (no answers yet, setup not finished) or "tailor this list" (?quiz=1): ask the
+  // short questionnaire. Skipping saves {skipped:true}, so it never nags.
+  const answers = parseAnswers(business.setupAnswers);
+  const setupSteps = await ownerSetupSteps(business, answers);
+  // Accounts that already finished the standard setup never see the quiz
+  // unless they ask for it (?quiz=1).
+  const alreadySetUp = setupSteps.filter((s) => !s.optional).every((s) => s.done);
+  const showQuiz = (!answers && !alreadySetUp) || searchParams.quiz === "1";
 
   const [stylistCount, serviceCount, upcomingBookings] = await Promise.all([
     prisma.stylist.count({ where: { businessId: business.id, active: true } }),
@@ -25,6 +42,24 @@ export default async function AdminDashboard() {
       <p className="subtle" style={{ marginBottom: 24 }}>
         Overview
       </p>
+
+      {showQuiz ? (
+        <SetupQuiz />
+      ) : (
+        <>
+          {answers?.skipped && (
+            <p className="subtle" style={{ marginBottom: 8, fontSize: 13 }}>
+              <Link href="/admin?quiz=1">Answer a few quick questions</Link> to tailor your setup list.
+            </p>
+          )}
+          <SetupChecklist
+        storageKey={`setup-hidden-${business.id}`}
+        title="Get set up — here's what to do next"
+        steps={setupSteps}
+        bookingLink={`https://hairsalonix.com/${business.slug}`}
+          />
+        </>
+      )}
 
       <div className="stat-row">
         <div className="stat-card">

@@ -78,12 +78,21 @@ model Business {
   subscriptionStatus   String?
   trialEndsAt          DateTime?
 
+  // Answers to the owner's first-visit setup questionnaire (see
+  // lib/setup.ts). Null until they answer or skip; used only to tailor
+  // the "Get set up" checklist.
+  setupAnswers Json?
+
   stripeConnectedAccountId String?  @unique
   stripeChargesEnabled     Boolean  @default(false)
   noShowFeeCents           Int      @default(2500)
 
   ownerId      String?  @unique
   owner        User?    @relation(fields: [ownerId], references: [id])
+
+  // People with full owner access besides the account owner (ownerId).
+  // See BusinessMember below.
+  members      BusinessMember[]
 
   stylists     Stylist[]
   services     Service[]
@@ -370,4 +379,22 @@ enum BookingStatus {
   CANCELLED
   COMPLETED
   NO_SHOW
+}
+
+// A co-owner: someone who signs in with their own login and gets the same
+// full owner access as the account owner, on the same business. Matched by
+// email (like Stylist.email), so they can be invited before they've ever
+// signed in. email is unique across the whole table so a person is a
+// co-owner of at most one business, which keeps "which business is this
+// login's?" unambiguous. The account owner (Business.ownerId) is NOT a row
+// here — only the people added on top of them.
+model BusinessMember {
+  id         String   @id @default(cuid())
+  businessId String
+  business   Business @relation(fields: [businessId], references: [id])
+  email      String   @unique
+  role       String   @default("OWNER")
+  createdAt  DateTime @default(now())
+
+  @@index([businessId])
 }

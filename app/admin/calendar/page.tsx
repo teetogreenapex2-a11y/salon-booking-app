@@ -2,6 +2,8 @@ import { prisma } from "@/lib/prisma";
 import { requireOwnerOrStylist } from "@/lib/access";
 import Link from "next/link";
 import StylistFilter from "@/components/StylistFilter";
+import SetupChecklist from "@/components/admin/SetupChecklist";
+import { stylistSetupSteps } from "@/lib/setup";
 
 export const dynamic = "force-dynamic";
 
@@ -50,6 +52,10 @@ export default async function AdminCalendar({
 }) {
   const access = await requireOwnerOrStylist();
   const business = access.business!;
+
+  // A stylist signed in under a salon gets a short "get ready" list of
+  // their own on their calendar; owners see theirs on the dashboard.
+  const stylistSteps = access.role === "stylist" ? await stylistSetupSteps(access.stylist) : null;
 
   const dateParam = searchParams.date;
   const day = dateParam ? new Date(dateParam + "T00:00:00") : new Date();
@@ -117,6 +123,14 @@ export default async function AdminCalendar({
 
   return (
     <div>
+      {access.role === "stylist" && stylistSteps && (
+        <SetupChecklist
+          storageKey={`setup-hidden-stylist-${access.stylist.id}`}
+          title="Get ready — a few quick steps"
+          steps={stylistSteps}
+        />
+      )}
+
       <h1 className="display" style={{ fontSize: 26, marginBottom: 4 }}>
         Calendar
       </h1>

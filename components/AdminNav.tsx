@@ -2,14 +2,15 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { LayoutDashboard, CalendarDays, ClipboardList, Users, Scissors } from "lucide-react";
 
 // The 5 most-used pages — these become the fixed bottom tab bar on phones.
 const PRIMARY_LINKS = [
-  { href: "/admin", label: "Dashboard" },
-  { href: "/admin/calendar", label: "Calendar" },
-  { href: "/admin/bookings", label: "Bookings" },
-  { href: "/admin/customers", label: "Customers" },
-  { href: "/admin/stylists", label: "Stylists" },
+  { href: "/admin", label: "Dashboard", Icon: LayoutDashboard },
+  { href: "/admin/calendar", label: "Calendar", Icon: CalendarDays },
+  { href: "/admin/bookings", label: "Bookings", Icon: ClipboardList },
+  { href: "/admin/customers", label: "Customers", Icon: Users },
+  { href: "/admin/stylists", label: "Stylists", Icon: Scissors },
 ];
 
 // Less-frequent pages — shown as a horizontal pill row up top on phones.
@@ -22,7 +23,7 @@ const SECONDARY_LINKS = [
   { href: "/admin/gallery", label: "Gallery" },
 ];
 
-const ALL_LINKS = [...PRIMARY_LINKS, ...SECONDARY_LINKS];
+const ALL_LINKS: { href: string; label: string }[] = [...PRIMARY_LINKS, ...SECONDARY_LINKS];
 
 function isActive(pathname: string | null, href: string) {
   return href === "/admin" ? pathname === "/admin" : pathname?.startsWith(href);
@@ -53,11 +54,22 @@ export default function AdminNav() {
 
       {/* Bottom tab bar — hidden on desktop, fixed to bottom on phones */}
       <nav className="admin-nav-bottom">
-        {PRIMARY_LINKS.map((link) => (
-          <Link key={link.href} href={link.href} className={isActive(pathname, link.href) ? "active" : ""}>
-            {link.label}
-          </Link>
-        ))}
+        {PRIMARY_LINKS.map(({ href, label, Icon }) => {
+          const active = isActive(pathname, href);
+          return (
+            <Link
+              key={href}
+              href={href}
+              className={`tab ${active ? "active" : ""}`}
+              aria-current={active ? "page" : undefined}
+            >
+              <span className="tab-icon">
+                <Icon size={22} strokeWidth={active ? 2.3 : 1.8} aria-hidden />
+              </span>
+              <span className="tab-label">{label}</span>
+            </Link>
+          );
+        })}
       </nav>
     </>
   );

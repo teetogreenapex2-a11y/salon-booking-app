@@ -13,8 +13,15 @@
    own sideways scroll (nav pill row, calendar grid) set overflow-x: auto
    on themselves, which still works fine nested inside this. */
 html, body {
-  overflow-x: hidden;
   max-width: 100%;
+}
+body {
+  overflow-x: hidden;
+}
+@supports (overflow: clip) {
+  body {
+    overflow-x: clip;
+  }
 }
 
 /* Any text input under 16px makes iOS Safari auto-zoom the whole page in
@@ -32,8 +39,8 @@ body {
     radial-gradient(circle at -5% -5%, rgba(236, 214, 219, 0.9) 0%, rgba(236, 214, 219, 0.9) 12%, transparent 13%),
     radial-gradient(circle at 105% 105%, rgba(236, 214, 219, 0.7) 0%, rgba(236, 214, 219, 0.7) 14%, transparent 15%),
     var(--cream);
-  background-attachment: fixed;
   min-height: 100vh;
+  min-height: 100dvh; /* 100vh is taller than the visible area on phones, so the page always had a little extra scroll */
 }
 
 .display { font-family: "Fraunces", serif; }
@@ -344,36 +351,74 @@ body {
     border-color: var(--berry);
   }
 
-  /* Bottom tab bar: the 5 primary pages, native-app style */
+  /* Bottom tab bar, native-app style: icon over label, a soft pill behind
+     the active icon, frosted background, and its own compositing layer so
+     it stays put while the page scrolls under it. */
   .admin-nav-bottom {
     position: fixed;
     bottom: 0;
     left: 0;
     right: 0;
     z-index: 50;
-    background: #fff;
-    border-top: 1px solid rgba(36, 28, 31, 0.1);
     display: flex;
     justify-content: space-around;
+    align-items: stretch;
+    padding: 6px 4px calc(6px + env(safe-area-inset-bottom));
+    padding-left: max(4px, env(safe-area-inset-left));
+    padding-right: max(4px, env(safe-area-inset-right));
+    background: rgba(255, 255, 255, 0.94);
+    -webkit-backdrop-filter: saturate(180%) blur(16px);
+    backdrop-filter: saturate(180%) blur(16px);
+    border-top: 0.5px solid rgba(36, 28, 31, 0.18);
+    transform: translateZ(0);
+    will-change: transform;
+    contain: layout paint;
+  }
+  .admin-nav-bottom .tab {
+    flex: 1 1 0;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
     align-items: center;
-    padding: 8px 6px calc(8px + env(safe-area-inset-bottom));
-  }
-  .admin-nav-bottom a {
-    flex: 1;
-    text-align: center;
-    color: var(--ink);
+    gap: 2px;
+    padding: 2px 0;
+    color: rgba(36, 28, 31, 0.6);
     text-decoration: none;
-    font-size: 11px;
-    padding: 8px 4px;
-    border-radius: 14px;
-    white-space: nowrap;
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+    user-select: none;
   }
-  .admin-nav-bottom a.active {
-    color: #fff;
-    background: var(--berry);
+  .admin-nav-bottom .tab-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 56px;
+    max-width: 90%;
+    height: 28px;
+    border-radius: 14px;
+    transition: background-color 0.15s ease, color 0.15s ease;
+  }
+  .admin-nav-bottom .tab-label {
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 10.5px;
+    line-height: 1.2;
+    letter-spacing: 0.01em;
+  }
+  .admin-nav-bottom .tab:active .tab-icon {
+    background: rgba(36, 28, 31, 0.08);
+  }
+  .admin-nav-bottom .tab.active {
+    color: var(--berry);
+    font-weight: 600;
+  }
+  .admin-nav-bottom .tab.active .tab-icon {
+    background: var(--blush);
   }
 
   .admin-page {
-    padding-bottom: 90px;
+    padding-bottom: calc(84px + env(safe-area-inset-bottom));
   }
 }

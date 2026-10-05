@@ -117,11 +117,11 @@ export async function getCurrentUser() {
   return session?.user ?? null;
 }
 
-// Use this everywhere an admin page currently does
-// `prisma.business.findFirst()` — it returns the logged-in user's own
-// business instead of "the" business, so each account only ever sees its
-// own data.
-export async function getCurrentBusiness() {
+// Who is signed in as an OWNER, and whether they're the account owner
+// (the person whose User row the business hangs off) or a co-owner added
+// by email. Co-owners get the same full access; only the account owner can
+// add or remove co-owners (see app/api/admin/co-owners).
+export async function getCurrentOwnerContext() {
   const user = await getCurrentUser();
   if (!user?.email) return null;
 
@@ -129,8 +129,27 @@ export async function getCurrentBusiness() {
     where: { email: user.email },
     include: { business: true },
   });
+  if (dbUser?.business) {
+    return { business: dbUser.business, isPrimary: true, email: user.email };
+  }
 
-  return dbUser?.business ?? null;
+  const member = await prisma.businessMember.findUnique({
+    where: { email: user.email.toLowerCase() },
+    include: { business: true },
+  });
+  if (member) {
+    return { business: member.business, isPrimary: false, email: user.email };
+  }
+
+  return null;
+}
+
+// Use this everywhere an admin page currently does
+// `prisma.business.findFirst()` — it returns the logged-in user's own
+// business instead of "the" business, so each account only ever sees its
+// own data. Works for the account owner and for co-owners.
+export async function getCurrentBusiness() {
+  return (await getCurrentOwnerContext())?.business ?? null;
 }
 
 // A stylist's login isn't a separate User-table link like an owner's —
