@@ -23,7 +23,17 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   return (
     <div>
       <div className="admin-nav">
-        <span className="display admin-nav-title">Salon Admin</span>
+        <span className="display admin-nav-title" style={{ display: "inline-flex", alignItems: "center", gap: 8 }}>
+          {activeBusiness?.logoUrl && (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={activeBusiness.logoUrl}
+              alt=""
+              style={{ height: 28, width: 28, objectFit: "contain", borderRadius: 4, flexShrink: 0 }}
+            />
+          )}
+          Salon Admin
+        </span>
         {isOwner ? (
           <AdminNav />
         ) : (

@@ -40,6 +40,9 @@ export default function BusinessForm({ business }: { business: Business }) {
         const data = await res.json();
         setLogoUrl(data.logoUrl);
         router.refresh();
+      } else {
+        const data = await res.json().catch(() => ({}));
+        alert(data.error || "The logo didn't upload — try again.");
       }
     } finally {
       setUploadingLogo(false);

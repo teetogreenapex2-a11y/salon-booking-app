@@ -20,9 +20,23 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Only image files are allowed" }, { status: 400 });
   }
 
-  const blob = await put(`logo/${business.id}/${Date.now()}-${file.name}`, file, {
-    access: "public",
-  });
+  let blob;
+  try {
+    blob = await put(`logo/${business.id}/${Date.now()}-${file.name}`, file, {
+      access: "public",
+    });
+  } catch (err) {
+    console.error("Logo upload failed", err);
+    const msg = err instanceof Error ? err.message : "";
+    return NextResponse.json(
+      {
+        error: /token/i.test(msg)
+          ? "File storage isn't connected yet (missing Vercel Blob token), so the logo couldn't be saved."
+          : "The logo couldn't be saved — try again.",
+      },
+      { status: 500 }
+    );
+  }
 
   const updated = await prisma.business.update({
     where: { id: business.id },
