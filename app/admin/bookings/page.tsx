@@ -1,3 +1,4 @@
+import { displayEmail } from "@/lib/placeholderEmail";
 import { prisma } from "@/lib/prisma";
 import { requireOwner } from "@/lib/access";
 import { resolvePayoutAccountId } from "@/lib/stripe";
@@ -41,9 +42,14 @@ export default async function BookingsPage() {
 
   return (
     <div>
-      <h1 className="display" style={{ fontSize: 26, marginBottom: 20 }}>
-        Bookings
-      </h1>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, marginBottom: 20 }}>
+        <h1 className="display" style={{ fontSize: 26, margin: 0 }}>
+          Bookings
+        </h1>
+        <a href="/admin/book" className="btn-primary" style={{ textDecoration: "none", padding: "9px 16px", fontSize: 14 }}>
+          + New booking
+        </a>
+      </div>
       {bookings.length === 0 ? (
         <p className="subtle">No bookings yet.</p>
       ) : (
@@ -69,7 +75,7 @@ export default async function BookingsPage() {
                 <tr key={b.id}>
                   <td>{b.customerName}</td>
                   <td>
-                    {b.customerEmail}
+                    {displayEmail(b.customerEmail)}
                     {b.customerPhone ? ` · ${b.customerPhone}` : ""}
                   </td>
                   <td>{b.service.name}</td>

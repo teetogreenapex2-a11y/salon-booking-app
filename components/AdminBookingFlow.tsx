@@ -28,6 +28,8 @@ export default function AdminBookingFlow({
   overrides,
   customer,
   cardByStylistId = {},
+  afterBookingHref,
+  allowSkipCard = false,
 }: {
   businessSlug: string;
   services: Service[];
@@ -35,6 +37,10 @@ export default function AdminBookingFlow({
   overrides: Override[];
   customer: Customer;
   cardByStylistId?: Record<string, boolean>;
+  // Where to go once booked (default: the customer's page, owner only).
+  afterBookingHref?: string;
+  // Lets staff book without collecting a card (e.g. a walk-in paying cash).
+  allowSkipCard?: boolean;
 }) {
   const router = useRouter();
   const [step, setStep] = useState<"select" | "calendar" | "card">("select");
@@ -132,7 +138,7 @@ export default function AdminBookingFlow({
     setSubmitting(false);
 
     if (res.ok) {
-      router.push(`/admin/customers/${customer.id}?booked=1`);
+      router.push(afterBookingHref ?? `/admin/customers/${customer.id}?booked=1`);
     } else {
       alert("That slot was just booked — pick another time.");
       setStep("calendar");
@@ -163,6 +169,16 @@ export default function AdminBookingFlow({
               customer={{ name: customer.name, email: customer.email, phone: customer.phone || "" }}
               onDone={(id) => submitBooking(id)}
             />
+            {allowSkipCard && (
+              <button
+                type="button"
+                className="btn-ghost"
+                style={{ marginTop: 14 }}
+                onClick={() => submitBooking(customer.id)}
+              >
+                Skip the card — book without one
+              </button>
+            )}
           </div>
         )}
       </div>
