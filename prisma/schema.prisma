@@ -90,6 +90,9 @@ model Business {
   stripeConnectedAccountId String?  @unique
   stripeChargesEnabled     Boolean  @default(false)
   noShowFeeCents           Int      @default(2500)
+  // Customers can reschedule/cancel themselves up to this many hours
+  // before the appointment; closer than that they're told to contact the salon.
+  cancelCutoffHours        Int      @default(24)
 
   ownerId      String?  @unique
   owner        User?    @relation(fields: [ownerId], references: [id])
@@ -357,6 +360,8 @@ model Booking {
   customerEmail String
   customerPhone String?
   smsConsent    Boolean  @default(false)
+  // Secret in the customer's "change or cancel" link (/manage/<token>).
+  manageToken   String?  @unique
   // The matching event on the stylist's Google Calendar, if synced.
   googleEventId String?
 

@@ -4,6 +4,8 @@ import { sendSms } from "@/lib/sms";
 import { sendEmail } from "@/lib/email";
 import { getEffectiveServiceInfo } from "@/lib/pricing";
 import { payEmailBlock } from "@/lib/paymentHandles";
+import { syncBookingToGoogle } from "@/lib/googleCalendar";
+import { newManageToken, manageUrl } from "@/lib/manage";
 
 export async function POST(req: NextRequest) {
   const body = await req.json();
@@ -69,11 +71,15 @@ export async function POST(req: NextRequest) {
       customerEmail: customer.email,
       customerPhone: customer.phone || null,
       smsConsent,
+      manageToken: newManageToken(),
     },
   });
 
+  await syncBookingToGoogle(booking.id);
+
   const origin = req.headers.get("origin") || `https://${process.env.VERCEL_URL}`;
   const link = `${origin}/${business.slug}/booking/${booking.id}`;
+  const manageLink = manageUrl(booking.manageToken!, origin);
   const when = start.toLocaleString(undefined, {
     weekday: "short",
     month: "short",
@@ -84,7 +90,7 @@ export async function POST(req: NextRequest) {
 
   const phone = customer.phone || customerRecord?.phone;
   if (phone && smsConsent) {
-    sendSms(phone, `${business.name}: You're booked for ${when}. Details: ${link}`).catch((err) =>
+    sendSms(phone, `${business.name}: You're booked for ${when}. Change or cancel: ${manageLink} Reply STOP to opt out, HELP for help.`).catch((err) =>
       console.error("Booking confirmation SMS failed", err)
     );
   }
@@ -107,7 +113,8 @@ export async function POST(req: NextRequest) {
     `
       <p>Hi ${customer.name},</p>
       <p>You're booked with <strong>${business.name}</strong> for <strong>${when}</strong>.</p>
-      <p><a href="${link}">View your appointment details</a></p>${payBlock}
+      <p><a href="${link}">View your appointment details</a></p>
+      <p>Need to change plans? <a href="${manageLink}">Reschedule or cancel your appointment</a>.</p>${payBlock}
     `
   ).catch((err) => console.error("Booking confirmation email failed", err));
 

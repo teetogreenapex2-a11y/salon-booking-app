@@ -13,6 +13,7 @@ type Business = {
   instagram: string | null;
   timezone: string;
   noShowFeeCents: number;
+  cancelCutoffHours: number;
   logoUrl: string | null;
   accentColor: string | null;
   coverUrl: string | null;
@@ -109,6 +110,7 @@ export default function BusinessForm({ business }: { business: Business }) {
         instagram: form.instagram,
         timezone: form.timezone,
         noShowFeeCents,
+        cancelCutoffHours: Math.max(0, Math.round(Number(form.cancelCutoffHours) || 0)),
         accentColor: accent,
       }),
     });
@@ -296,6 +298,17 @@ export default function BusinessForm({ business }: { business: Business }) {
           min="0"
           value={form.noShowFeeDollars}
           onChange={(e) => setForm({ ...form, noShowFeeDollars: e.target.value })}
+        />
+        <label className="subtle" style={{ fontSize: 12, marginTop: 8 }}>
+          Customers can reschedule or cancel on their own up to this many hours before the appointment
+        </label>
+        <input
+          placeholder="24"
+          type="number"
+          step="1"
+          min="0"
+          value={form.cancelCutoffHours}
+          onChange={(e) => setForm({ ...form, cancelCutoffHours: Number(e.target.value) })}
         />
         <button className="btn-primary" type="submit" disabled={saving}>
           {saving ? "Saving…" : "Save changes"}

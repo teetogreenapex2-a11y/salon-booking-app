@@ -2,6 +2,7 @@ import { prisma } from "@/lib/prisma";
 import { notFound } from "next/navigation";
 import { MapPin, Scissors } from "lucide-react";
 import { venmoUrl, cashAppUrl, hasAnyHandle } from "@/lib/paymentHandles";
+import { ensureManageToken } from "@/lib/manage";
 
 export const dynamic = "force-dynamic";
 
@@ -31,6 +32,8 @@ export default async function BookingDetailsPage({
     (booking.status === "CONFIRMED" || booking.status === "COMPLETED") &&
     !booking.paidOutsideAt &&
     hasAnyHandle(stylist);
+  const canManage = booking.status === "CONFIRMED" && booking.startsAt.getTime() > Date.now();
+  const manageToken = canManage ? await ensureManageToken(booking.id, booking.manageToken) : null;
   const payNote = `${booking.service.name} with ${stylist.name}`;
 
   return (
@@ -68,6 +71,12 @@ export default async function BookingDetailsPage({
         <Row label="Stylist" value={booking.stylist.name} />
         {booking.business.address && <Row label="Location" value={booking.business.address} />}
       </div>
+
+      {manageToken && (
+        <a className="btn-ghost" style={{ display: "block", textAlign: "center", marginTop: 18 }} href={`/manage/${manageToken}`}>
+          Reschedule or cancel
+        </a>
+      )}
 
       {booking.paidOutsideAt && (
         <p className="subtle" style={{ marginTop: 18 }}>

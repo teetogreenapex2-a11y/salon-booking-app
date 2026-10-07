@@ -11,7 +11,12 @@ const SLOT_STEP_MIN = 15;
  * here too — same place BookMyPro pulls synced events before returning
  * open slots.
  */
-export async function getOpenSlots(stylistId: string, date: Date, durationMin: number) {
+export async function getOpenSlots(
+  stylistId: string,
+  date: Date,
+  durationMin: number,
+  excludeBookingId?: string
+) {
   const dayOfWeek = date.getDay();
 
   const windows = await prisma.availability.findMany({
@@ -29,6 +34,7 @@ export async function getOpenSlots(stylistId: string, date: Date, durationMin: n
     where: {
       stylistId,
       status: "CONFIRMED",
+      ...(excludeBookingId ? { id: { not: excludeBookingId } } : {}),
       startsAt: { gte: dayStart, lte: dayEnd },
     },
     select: { startsAt: true, endsAt: true },
