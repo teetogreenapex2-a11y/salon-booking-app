@@ -142,6 +142,7 @@ export default function BookingFlow({
       const booking = await res.json();
       try {
         localStorage.setItem("hsx_customer", JSON.stringify(customer));
+        localStorage.setItem("hsx_last_salon", businessSlug);
       } catch {}
       router.push(`/${businessSlug}/book/confirm?id=${booking.id}`);
     } else {

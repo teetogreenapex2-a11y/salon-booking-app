@@ -1,4 +1,8 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
+import ReturningCustomerRedirect from "@/components/ReturningCustomerRedirect";
 
 export const metadata = {
   title: "Hairsalonix — Booking software for salons & independent stylists",
@@ -6,9 +10,21 @@ export const metadata = {
     "Online booking, a real admin calendar, customer history, and no-show protection — built for salons with a team and for stylists renting their own chair. One flat price, no commission.",
 };
 
-export default function MarketingHome() {
+export const dynamic = "force-dynamic";
+
+export default async function MarketingHome({
+  searchParams,
+}: {
+  searchParams?: { stay?: string };
+}) {
+  // Owners and stylists who are already signed in go straight to their
+  // admin; everyone else sees the marketing page.
+  const session = await getServerSession(authOptions);
+  if (session?.user && !searchParams?.stay) redirect("/admin");
+
   return (
     <>
+      {!searchParams?.stay && <ReturningCustomerRedirect />}
       <style>{`
         .mkt { --mk-ink:#241c1f; --mk-ink-soft:#5a4f52; --mk-berry:#7f2d4a; --mk-berry-deep:#5c2130;
                --mk-cream:#faf6f3; --mk-card:#ffffff; --mk-blush:#f3e3ec; --mk-line:rgba(36,28,31,0.12); }
@@ -52,6 +68,7 @@ export default function MarketingHome() {
               <a href="#roadmap" className="mkt-nav-text">What&rsquo;s coming</a>
               <a href="#pricing" className="mkt-nav-text">Pricing</a>
               <Link href="/find" className="mkt-nav-text">Find a salon</Link>
+              <Link href="/login" style={{ fontWeight: 600 }}>Sign in</Link>
               <Link href="/onboarding" className="mkt-btn mkt-btn-primary" style={{ padding: "10px 22px" }}>Start free trial</Link>
             </div>
           </div>
@@ -73,9 +90,9 @@ export default function MarketingHome() {
               <Link href="/onboarding" className="mkt-btn mkt-btn-primary" style={{ padding: "15px 30px", fontSize: 16 }}>
                 Start your 14-day free trial
               </Link>
-              <a href="#features" className="mkt-btn mkt-btn-ghost" style={{ padding: "15px 30px", fontSize: 16 }}>
-                See what&rsquo;s included
-              </a>
+              <Link href="/find" className="mkt-btn mkt-btn-ghost" style={{ padding: "15px 30px", fontSize: 16 }}>
+                Booking an appointment? Find your salon
+              </Link>
             </div>
             <p style={{ fontSize: 13, color: "var(--mk-ink-soft)", marginTop: 16 }}>
               No credit card tricks — $20/mo after your trial, cancel anytime.
