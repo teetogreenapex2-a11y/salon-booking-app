@@ -1,12 +1,13 @@
 import { prisma } from "@/lib/prisma";
 import { notFound } from "next/navigation";
+import InstallTip from "@/components/InstallTip";
 
 export default async function ConfirmPage({ searchParams }: { searchParams: { id?: string } }) {
   if (!searchParams.id) notFound();
 
   const booking = await prisma.booking.findUnique({
     where: { id: searchParams.id },
-    include: { service: true, stylist: true },
+    include: { service: true, stylist: true, business: true },
   });
 
   if (!booking) notFound();
@@ -34,6 +35,8 @@ export default async function ConfirmPage({ searchParams }: { searchParams: { id
         />
         <Row label="Total" value={`$${((booking.priceCents || booking.service.priceCents) / 100).toFixed(0)}`} bold />
       </div>
+
+      <InstallTip businessName={booking.business.name} />
     </main>
   );
 }

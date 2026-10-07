@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Clock, ChevronLeft, ChevronRight, Scissors, Palette, Sparkles, Droplets, Brush, Wind } from "lucide-react";
 import CardOnFileStep from "./CardOnFileStep";
@@ -43,6 +43,20 @@ export default function BookingFlow({
   const [submitting, setSubmitting] = useState(false);
   const [customer, setCustomer] = useState({ name: "", email: "", phone: "" });
   const [smsConsent, setSmsConsent] = useState(false);
+
+  // Returning customers (e.g. from the home-screen app) don't retype.
+  useEffect(() => {
+    try {
+      const saved = JSON.parse(localStorage.getItem("hsx_customer") || "null");
+      if (saved && typeof saved === "object") {
+        setCustomer((c) => ({
+          name: c.name || saved.name || "",
+          email: c.email || saved.email || "",
+          phone: c.phone || saved.phone || "",
+        }));
+      }
+    } catch {}
+  }, []);
   const [pendingStartMin, setPendingStartMin] = useState<number | null>(null);
 
   const week = useMemo(() => buildWeek(weekOffset), [weekOffset]);
@@ -126,6 +140,9 @@ export default function BookingFlow({
 
     if (res.ok) {
       const booking = await res.json();
+      try {
+        localStorage.setItem("hsx_customer", JSON.stringify(customer));
+      } catch {}
       router.push(`/${businessSlug}/book/confirm?id=${booking.id}`);
     } else {
       alert("That slot was just booked — pick another time.");

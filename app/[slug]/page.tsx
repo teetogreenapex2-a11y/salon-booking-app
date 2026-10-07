@@ -1,4 +1,5 @@
 export const dynamic = "force-dynamic";
+import InstallTip from "@/components/InstallTip";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
@@ -78,6 +79,8 @@ export default async function BusinessPage({ params }: { params: { slug: string 
           </div>
         ))}
       </div>
+
+      <InstallTip businessName={business.name} />
     </main>
   );
 }
