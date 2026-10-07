@@ -14,31 +14,39 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Not signed in" }, { status: 401 });
   }
 
-  let accountId = business.stripeConnectedAccountId;
-  if (!accountId) {
-    const account = await stripe.accounts.create({
-      type: "express",
-      capabilities: {
-        card_payments: { requested: true },
-        transfers: { requested: true },
-      },
-      metadata: { businessId: business.id },
+  try {
+    let accountId = business.stripeConnectedAccountId;
+    if (!accountId) {
+      const account = await stripe.accounts.create({
+        type: "express",
+        capabilities: {
+          card_payments: { requested: true },
+          transfers: { requested: true },
+        },
+        metadata: { businessId: business.id },
+      });
+      accountId = account.id;
+      await prisma.business.update({
+        where: { id: business.id },
+        data: { stripeConnectedAccountId: accountId },
+      });
+    }
+
+    const origin = req.headers.get("origin") || `https://${process.env.VERCEL_URL}`;
+
+    const accountLink = await stripe.accountLinks.create({
+      account: accountId,
+      refresh_url: `${origin}/admin/billing`,
+      return_url: `${origin}/admin/billing?connected=1`,
+      type: "account_onboarding",
     });
-    accountId = account.id;
-    await prisma.business.update({
-      where: { id: business.id },
-      data: { stripeConnectedAccountId: accountId },
-    });
+
+    return NextResponse.json({ url: accountLink.url });
+  } catch (e: any) {
+    console.error("Stripe connect failed:", e);
+    return NextResponse.json(
+      { error: "Stripe said: " + (e?.message || "unknown error") },
+      { status: 500 }
+    );
   }
-
-  const origin = req.headers.get("origin") || `https://${process.env.VERCEL_URL}`;
-
-  const accountLink = await stripe.accountLinks.create({
-    account: accountId,
-    refresh_url: `${origin}/admin/billing`,
-    return_url: `${origin}/admin/billing?connected=1`,
-    type: "account_onboarding",
-  });
-
-  return NextResponse.json({ url: accountLink.url });
 }

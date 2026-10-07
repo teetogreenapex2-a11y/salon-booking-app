@@ -51,14 +51,18 @@ export function ConnectButton({ alreadyConnected }: { alreadyConnected: boolean 
 
   async function handleClick() {
     setLoading(true);
-    const res = await fetch("/api/billing/connect", { method: "POST" });
-    const data = await res.json();
-    if (data.url) {
-      window.location.href = data.url;
-    } else {
-      setLoading(false);
-      alert("Something went wrong — try again.");
+    try {
+      const res = await fetch("/api/billing/connect", { method: "POST" });
+      const data = await res.json().catch(() => ({}));
+      if (data.url) {
+        window.location.href = data.url;
+        return;
+      }
+      alert(data.error || "Something went wrong — try again.");
+    } catch {
+      alert("Couldn't reach the server — try again.");
     }
+    setLoading(false);
   }
 
   return (
@@ -120,14 +124,18 @@ export function StylistConnectButton({ alreadyConnected }: { alreadyConnected: b
 
   async function handleClick() {
     setLoading(true);
-    const res = await fetch("/api/stylist/connect", { method: "POST" });
-    const data = await res.json();
-    if (data.url) {
-      window.location.href = data.url;
-    } else {
-      setLoading(false);
+    try {
+      const res = await fetch("/api/stylist/connect", { method: "POST" });
+      const data = await res.json().catch(() => ({}));
+      if (data.url) {
+        window.location.href = data.url;
+        return;
+      }
       alert(data.error || "Something went wrong — try again.");
+    } catch {
+      alert("Couldn't reach the server — try again.");
     }
+    setLoading(false);
   }
 
   return (

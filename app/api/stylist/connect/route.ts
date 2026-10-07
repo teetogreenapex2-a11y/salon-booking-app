@@ -19,31 +19,39 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  let accountId = stylist.stripeConnectedAccountId;
-  if (!accountId) {
-    const account = await stripe.accounts.create({
-      type: "express",
-      capabilities: {
-        card_payments: { requested: true },
-        transfers: { requested: true },
-      },
-      metadata: { stylistId: stylist.id },
+  try {
+    let accountId = stylist.stripeConnectedAccountId;
+    if (!accountId) {
+      const account = await stripe.accounts.create({
+        type: "express",
+        capabilities: {
+          card_payments: { requested: true },
+          transfers: { requested: true },
+        },
+        metadata: { stylistId: stylist.id },
+      });
+      accountId = account.id;
+      await prisma.stylist.update({
+        where: { id: stylist.id },
+        data: { stripeConnectedAccountId: accountId },
+      });
+    }
+
+    const origin = req.headers.get("origin") || `https://${process.env.VERCEL_URL}`;
+
+    const accountLink = await stripe.accountLinks.create({
+      account: accountId,
+      refresh_url: `${origin}/admin/my-billing`,
+      return_url: `${origin}/admin/my-billing?connected=1`,
+      type: "account_onboarding",
     });
-    accountId = account.id;
-    await prisma.stylist.update({
-      where: { id: stylist.id },
-      data: { stripeConnectedAccountId: accountId },
-    });
+
+    return NextResponse.json({ url: accountLink.url });
+  } catch (e: any) {
+    console.error("Stripe connect failed:", e);
+    return NextResponse.json(
+      { error: "Stripe said: " + (e?.message || "unknown error") },
+      { status: 500 }
+    );
   }
-
-  const origin = req.headers.get("origin") || `https://${process.env.VERCEL_URL}`;
-
-  const accountLink = await stripe.accountLinks.create({
-    account: accountId,
-    refresh_url: `${origin}/admin/my-billing`,
-    return_url: `${origin}/admin/my-billing?connected=1`,
-    type: "account_onboarding",
-  });
-
-  return NextResponse.json({ url: accountLink.url });
 }
