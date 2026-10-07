@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getCurrentBusiness } from "@/lib/auth";
+import { cleanAccent } from "@/lib/accent";
 
 // Updates the LOGGED-IN user's own business only — the id always comes
 // from the session, never from the request body.
@@ -10,7 +11,12 @@ export async function PUT(req: NextRequest) {
     return NextResponse.json({ error: "Not signed in" }, { status: 401 });
   }
 
-  const { name, slug, tagline, address, instagram, timezone, noShowFeeCents } = await req.json();
+  const body = await req.json();
+  const { name, slug, tagline, address, instagram, timezone, noShowFeeCents } = body;
+  const accent = "accentColor" in body ? cleanAccent(body.accentColor) : undefined;
+  if ("accentColor" in body && accent === undefined) {
+    return NextResponse.json({ error: "Pick a valid color" }, { status: 400 });
+  }
 
   let cleanSlug: string | undefined;
   if (typeof slug === "string") {
@@ -43,6 +49,7 @@ export async function PUT(req: NextRequest) {
       instagram,
       timezone,
       ...(cleanSlug ? { slug: cleanSlug } : {}),
+      ...(accent !== undefined ? { accentColor: accent } : {}),
       ...(typeof noShowFeeCents === "number" ? { noShowFeeCents } : {}),
     },
   });

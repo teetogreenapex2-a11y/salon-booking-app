@@ -2,6 +2,7 @@
 
 import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import { ACCENT_PRESETS, DEFAULT_ACCENT } from "@/lib/accent";
 
 type Business = {
   id: string;
@@ -13,6 +14,8 @@ type Business = {
   timezone: string;
   noShowFeeCents: number;
   logoUrl: string | null;
+  accentColor: string | null;
+  coverUrl: string | null;
 };
 
 export default function BusinessForm({ business }: { business: Business }) {
@@ -26,6 +29,37 @@ export default function BusinessForm({ business }: { business: Business }) {
   const [error, setError] = useState<string | false>(false);
   const [logoUrl, setLogoUrl] = useState(business.logoUrl);
   const [uploadingLogo, setUploadingLogo] = useState(false);
+  const [accent, setAccent] = useState(business.accentColor ?? DEFAULT_ACCENT);
+  const [coverUrl, setCoverUrl] = useState(business.coverUrl);
+  const [uploadingCover, setUploadingCover] = useState(false);
+  const coverInputRef = useRef<HTMLInputElement>(null);
+
+  async function handleCoverChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploadingCover(true);
+    try {
+      const fd = new FormData();
+      fd.append("file", file);
+      const res = await fetch("/api/admin/business/cover", { method: "POST", body: fd });
+      const data = await res.json().catch(() => ({}));
+      if (res.ok) {
+        setCoverUrl(data.coverUrl);
+        router.refresh();
+      } else {
+        alert(data.error || "The photo didn't upload — try again.");
+      }
+    } finally {
+      setUploadingCover(false);
+      if (coverInputRef.current) coverInputRef.current.value = "";
+    }
+  }
+
+  async function handleCoverRemove() {
+    setCoverUrl(null);
+    await fetch("/api/admin/business/cover", { method: "DELETE" });
+    router.refresh();
+  }
   const logoInputRef = useRef<HTMLInputElement>(null);
 
   async function handleLogoChange(e: React.ChangeEvent<HTMLInputElement>) {
@@ -75,6 +109,7 @@ export default function BusinessForm({ business }: { business: Business }) {
         instagram: form.instagram,
         timezone: form.timezone,
         noShowFeeCents,
+        accentColor: accent,
       }),
     });
     setSaving(false);
@@ -140,6 +175,66 @@ export default function BusinessForm({ business }: { business: Business }) {
               </button>
             )}
           </div>
+        </div>
+      </div>
+
+      <div style={{ marginBottom: 24 }}>
+        <label className="subtle" style={{ fontSize: 12, display: "block", marginBottom: 8 }}>
+          Cover photo (top of your booking page)
+        </label>
+        <div
+          style={{
+            height: 110,
+            borderRadius: 14,
+            overflow: "hidden",
+            background: coverUrl ? `center / cover no-repeat url(${coverUrl})` : "var(--blush)",
+            marginBottom: 10,
+          }}
+        />
+        <div style={{ display: "flex", gap: 10 }}>
+          <label className="btn-primary" style={{ cursor: "pointer", fontSize: 13, padding: "9px 16px" }}>
+            {uploadingCover ? "Uploading…" : coverUrl ? "Replace" : "Upload cover photo"}
+            <input ref={coverInputRef} type="file" accept="image/*" onChange={handleCoverChange} style={{ display: "none" }} />
+          </label>
+          {coverUrl && (
+            <button type="button" onClick={handleCoverRemove} className="icon-btn" style={{ padding: "9px 14px", fontSize: 13 }}>
+              Remove
+            </button>
+          )}
+        </div>
+      </div>
+
+      <div style={{ marginBottom: 24 }}>
+        <label className="subtle" style={{ fontSize: 12, display: "block", marginBottom: 8 }}>
+          Your color (used on your booking page — save changes below to apply)
+        </label>
+        <div style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
+          {ACCENT_PRESETS.map((c) => (
+            <button
+              key={c.hex}
+              type="button"
+              title={c.name}
+              aria-label={c.name}
+              onClick={() => setAccent(c.hex)}
+              style={{
+                width: 34,
+                height: 34,
+                borderRadius: "50%",
+                background: c.hex,
+                border: accent === c.hex ? "3px solid #fff" : "3px solid transparent",
+                boxShadow: accent === c.hex ? `0 0 0 2px ${c.hex}` : "0 1px 3px rgba(0,0,0,0.25)",
+                cursor: "pointer",
+                padding: 0,
+              }}
+            />
+          ))}
+          <input
+            type="color"
+            value={accent}
+            onChange={(e) => setAccent(e.target.value)}
+            aria-label="Custom color"
+            style={{ width: 40, height: 34, padding: 0, border: "none", background: "none" }}
+          />
         </div>
       </div>
 

@@ -13,8 +13,24 @@ export default async function BusinessPage({ params }: { params: { slug: string 
 
   return (
     <main className="page">
-      <div className="hero">
-        {business.logoUrl ? (
+      <div
+        className="hero"
+        style={
+          business.coverUrl
+            ? { background: `linear-gradient(180deg, rgba(0,0,0,0) 45%, rgba(0,0,0,0.28) 100%), center / cover no-repeat url(${business.coverUrl})`, position: "relative", marginBottom: business.logoUrl ? 46 : 20, overflow: "visible" }
+            : undefined
+        }
+      >
+        {business.coverUrl ? (
+          business.logoUrl && (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={business.logoUrl}
+              alt={business.name}
+              style={{ position: "absolute", left: 20, bottom: -34, width: 72, height: 72, borderRadius: 18, objectFit: "contain", background: "var(--panel)", padding: 6, boxShadow: "0 4px 14px rgba(0,0,0,0.22)" }}
+            />
+          )
+        ) : business.logoUrl ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img
             src={business.logoUrl}
@@ -47,7 +63,14 @@ export default async function BusinessPage({ params }: { params: { slug: string 
       <div className="stylist-list">
         {business.stylists.map((s) => (
           <div key={s.id} className="card static">
-            <div className="avatar">{initials(s.name)}</div>
+            <div className="avatar" style={{ overflow: "hidden" }}>
+              {s.photoUrl ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={s.photoUrl} alt={s.name} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+              ) : (
+                initials(s.name)
+              )}
+            </div>
             <div>
               <p className="name">{s.name}</p>
               {s.specialty && <p className="specialty">{s.specialty}</p>}

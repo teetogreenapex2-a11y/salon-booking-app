@@ -2,11 +2,11 @@
 
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Clock, ChevronLeft, ChevronRight } from "lucide-react";
+import { Clock, ChevronLeft, ChevronRight, Scissors, Palette, Sparkles, Droplets, Brush, Wind } from "lucide-react";
 import CardOnFileStep from "./CardOnFileStep";
 
 type Service = { id: string; name: string; durationMin: number; priceCents: number; tag: string | null };
-type Stylist = { id: string; name: string; specialty: string | null };
+type Stylist = { id: string; name: string; specialty: string | null; photoUrl?: string | null };
 type Override = { stylistId: string; serviceId: string; priceCents: number | null; durationMin: number | null };
 
 function buildWeek(offset: number) {
@@ -252,8 +252,20 @@ function SelectStep({
       <div className="list">
         {stylists.map((s) => (
           <button key={s.id} className={`card ${sty?.id === s.id ? "selected" : ""}`} onClick={() => pickStylist(s)}>
-            <p className="name">{s.name}</p>
-            {s.specialty && <p className="subtle" style={{ margin: "2px 0 0" }}>{s.specialty}</p>}
+            <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+              <div className="avatar" style={{ overflow: "hidden" }}>
+                {s.photoUrl ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={s.photoUrl} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                ) : (
+                  s.name.split(" ").map((n) => n[0]).slice(0, 2).join("").toUpperCase()
+                )}
+              </div>
+              <div>
+                <p className="name">{s.name}</p>
+                {s.specialty && <p className="subtle" style={{ margin: "2px 0 0" }}>{s.specialty}</p>}
+              </div>
+            </div>
           </button>
         ))}
       </div>
@@ -275,6 +287,8 @@ function SelectStep({
                   return (
                     <button key={s.id} className={`card ${svc?.id === s.id ? "selected" : ""}`} onClick={() => setSvc(s)}>
                       <div className="row">
+                        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                          <span className="service-icon">{serviceIcon(s.name)}</span>
                         <div>
                           <div className="row" style={{ gap: 8 }}>
                             <span className="name">{s.name}</span>
@@ -283,6 +297,7 @@ function SelectStep({
                           <div className="row subtle" style={{ marginTop: 4, fontSize: 12 }}>
                             <Clock size={12} /> {eff.durationMin} min
                           </div>
+                        </div>
                         </div>
                         <span className="display price">${(eff.priceCents / 100).toFixed(0)}</span>
                       </div>
@@ -354,6 +369,18 @@ function CustomerForm({
       </p>
     </div>
   );
+}
+
+// A small icon that hints at the kind of service, from its name.
+function serviceIcon(name: string) {
+  const n = name.toLowerCase();
+  const p = { size: 18 };
+  if (/color|colour|balayage|highlight|tint|ombre|toner|foil/.test(n)) return <Palette {...p} />;
+  if (/blow|style|updo|braid|curl|press/.test(n)) return <Wind {...p} />;
+  if (/treatment|condition|keratin|mask|scalp|gloss/.test(n)) return <Droplets {...p} />;
+  if (/makeup|brow|lash|wax|facial/.test(n)) return <Brush {...p} />;
+  if (/cut|trim|bang|fade|shave|clip/.test(n)) return <Scissors {...p} />;
+  return <Sparkles {...p} />;
 }
 
 // Choose -> Time -> Confirm progress indicator.

@@ -2,6 +2,7 @@ export const dynamic = "force-dynamic";
 import { prisma } from "@/lib/prisma";
 import { requireOwner } from "@/lib/access";
 import Link from "next/link";
+import { Users, Scissors, CalendarCheck, CalendarPlus } from "lucide-react";
 import SetupChecklist from "@/components/admin/SetupChecklist";
 import SetupQuiz from "@/components/admin/SetupQuiz";
 import { ownerSetupSteps } from "@/lib/setup";
@@ -63,14 +64,17 @@ export default async function AdminDashboard({
 
       <div className="stat-row">
         <div className="stat-card">
+          <span className="stat-icon"><Users size={18} /></span>
           <span className="stat-number">{stylistCount}</span>
           <span className="subtle">Active stylists</span>
         </div>
         <div className="stat-card">
+          <span className="stat-icon"><Scissors size={18} /></span>
           <span className="stat-number">{serviceCount}</span>
           <span className="subtle">Services offered</span>
         </div>
         <div className="stat-card">
+          <span className="stat-icon"><CalendarCheck size={18} /></span>
           <span className="stat-number">{upcomingBookings.length}</span>
           <span className="subtle">Upcoming bookings</span>
         </div>
@@ -80,7 +84,16 @@ export default async function AdminDashboard({
         Next up
       </h2>
       {upcomingBookings.length === 0 ? (
-        <p className="subtle">No upcoming bookings yet.</p>
+        <div className="empty-state">
+          <span className="stat-icon"><CalendarPlus size={22} /></span>
+          <p className="name">No upcoming bookings yet</p>
+          <p className="subtle" style={{ margin: "6px 0 14px" }}>
+            Share your booking link and new appointments will show up here.
+          </p>
+          <a className="btn-primary" href={`/${business.slug}`} style={{ textDecoration: "none" }}>
+            View my booking page
+          </a>
+        </div>
       ) : (
         <div className="list">
           {upcomingBookings.map((b) => (

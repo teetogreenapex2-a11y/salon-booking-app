@@ -67,6 +67,10 @@ model Business {
   name         String
   tagline      String?
   logoUrl      String?
+  // Optional per-salon branding: a hex accent color (e.g. #7f2d4a) and a
+  // cover photo shown at the top of the public booking page.
+  accentColor  String?
+  coverUrl     String?
   address      String?
   instagram    String?
   timezone     String   @default("America/New_York")
@@ -126,6 +130,8 @@ model Stylist {
   // Stylists page.
   canEditOwnPricing Boolean @default(true)
   canEditOwnHours   Boolean @default(true)
+  // Off by default: lets a stylist add new services to the shared menu.
+  canAddServices    Boolean @default(false)
 
   // Commission this stylist earns on retail product sales they ring up
   // (0-100). Defaults to 0 — no commission — until the owner sets one.
@@ -351,6 +357,8 @@ model Booking {
   customerEmail String
   customerPhone String?
   smsConsent    Boolean  @default(false)
+  // The matching event on the stylist's Google Calendar, if synced.
+  googleEventId String?
 
   startsAt     DateTime
   endsAt       DateTime

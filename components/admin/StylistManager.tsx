@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import StylistPhotoUpload from "./StylistPhotoUpload";
 
 type Stylist = {
   id: string;
@@ -14,6 +15,8 @@ type Stylist = {
   independentBilling: boolean;
   canEditOwnPricing: boolean;
   canEditOwnHours: boolean;
+  canAddServices: boolean;
+  photoUrl: string | null;
   retailCommissionPct: number;
   venmoHandle: string | null;
   cashAppHandle: string | null;
@@ -133,7 +136,7 @@ export default function StylistManager({
 
   async function toggleFlag(
     id: string,
-    field: "independentPayouts" | "independentBilling" | "canEditOwnPricing" | "canEditOwnHours",
+    field: "independentPayouts" | "independentBilling" | "canEditOwnPricing" | "canEditOwnHours" | "canAddServices",
     value: boolean
   ) {
     const res = await fetch(`/api/admin/stylists/${id}`, {
@@ -198,6 +201,7 @@ export default function StylistManager({
       <div className="list" style={{ marginBottom: 28 }}>
         {stylists.map((s) => (
           <div key={s.id} className="card static" style={{ flexDirection: "column", alignItems: "stretch", gap: 10 }}>
+            <StylistPhotoUpload stylistId={s.id} name={s.name} photoUrl={s.photoUrl} />
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
               <div>
                 <p className="name">
@@ -327,6 +331,14 @@ export default function StylistManager({
                   onChange={() => toggleFlag(s.id, "canEditOwnHours", s.canEditOwnHours)}
                 />
                 Can change their own hours
+              </label>
+              <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13 }}>
+                <input
+                  type="checkbox"
+                  checked={s.canAddServices}
+                  onChange={() => toggleFlag(s.id, "canAddServices", s.canAddServices)}
+                />
+                Can add new services
               </label>
             </div>
 
