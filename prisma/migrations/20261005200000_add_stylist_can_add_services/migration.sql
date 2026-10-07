@@ -1,0 +1,1 @@
+ALTER TABLE "Stylist" ADD COLUMN "canAddServices" BOOLEAN NOT NULL DEFAULT false;
