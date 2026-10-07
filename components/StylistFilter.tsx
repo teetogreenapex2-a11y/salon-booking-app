@@ -32,7 +32,7 @@ export default function StylistFilter({
         borderRadius: 4,
         fontSize: 14,
         fontFamily: "inherit",
-        background: "#fff",
+        background: "var(--panel)",
       }}
     >
       <option value="all">All stylists</option>

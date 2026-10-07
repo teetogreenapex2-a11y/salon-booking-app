@@ -3,6 +3,9 @@ import Providers from "@/components/SessionProviderWrapper";
 
 export const metadata = {
   title: "Book an appointment",
+  manifest: "/manifest.webmanifest",
+  icons: { apple: "/apple-touch-icon.png" },
+  appleWebApp: { capable: true, title: "Hairsalonix", statusBarStyle: "default" },
 };
 
 // viewport-fit=cover lets the bottom tab bar's safe-area padding actually
@@ -12,7 +15,7 @@ export const viewport = {
   width: "device-width",
   initialScale: 1,
   viewportFit: "cover",
-  themeColor: "#ffffff",
+  themeColor: "#e9e0e3",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

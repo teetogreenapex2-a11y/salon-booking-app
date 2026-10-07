@@ -143,7 +143,7 @@ function CardForm({
           padding: "12px",
           border: "1px solid rgba(36,28,31,0.15)",
           borderRadius: 6,
-          background: "#fff",
+          background: "var(--panel)",
         }}
       >
         <CardElement options={{ style: { base: { fontSize: "16px" } } }} />

@@ -61,7 +61,7 @@ export default function CustomerEditForm({
           borderRadius: 4,
           fontSize: 14,
           fontFamily: "inherit",
-          background: "#fff",
+          background: "var(--panel)",
         }}
       >
         <option value="">No preference</option>

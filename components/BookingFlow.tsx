@@ -137,18 +137,22 @@ export default function BookingFlow({
 
   if (step === "select") {
     return (
-      <SelectStep
-        services={services}
-        stylists={stylists}
-        effectiveFor={effectiveFor}
-        onNext={goToCalendar}
-      />
+      <div>
+        <StepBar current={0} />
+        <SelectStep
+          services={services}
+          stylists={stylists}
+          effectiveFor={effectiveFor}
+          onNext={goToCalendar}
+        />
+      </div>
     );
   }
 
   if (step === "card") {
     return (
       <div>
+        <StepBar current={2} />
         <button className="back-link" onClick={() => setStep("calendar")} disabled={submitting}>
           <ChevronLeft size={16} /> Back
         </button>
@@ -170,6 +174,7 @@ export default function BookingFlow({
 
   return (
     <div>
+      <StepBar current={1} />
       <button className="back-link" onClick={() => setStep("select")}>
         <ChevronLeft size={16} /> Back
       </button>
@@ -347,6 +352,24 @@ function CustomerForm({
       <p className="subtle" style={{ fontSize: 12, marginTop: 6 }}>
         Fill this in, then pick a time below.
       </p>
+    </div>
+  );
+}
+
+// Choose -> Time -> Confirm progress indicator.
+function StepBar({ current }: { current: 0 | 1 | 2 }) {
+  const labels = ["Choose", "Time", "Confirm"];
+  return (
+    <div className="stepbar" aria-label={`Step ${current + 1} of 3`}>
+      {labels.map((label, i) => (
+        <div key={label} style={{ display: "contents" }}>
+          <div className={`step ${i < current ? "done" : i === current ? "current" : ""}`}>
+            <span className="dot">{i < current ? "✓" : i + 1}</span>
+            <span>{label}</span>
+          </div>
+          {i < labels.length - 1 && <div className={`line ${i < current ? "done" : ""}`} />}
+        </div>
+      ))}
     </div>
   );
 }

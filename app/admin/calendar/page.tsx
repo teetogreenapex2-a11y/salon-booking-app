@@ -131,14 +131,9 @@ export default async function AdminCalendar({
         />
       )}
 
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, marginBottom: 4 }}>
-        <h1 className="display" style={{ fontSize: 26, margin: 0 }}>
-          Calendar
-        </h1>
-        <a href="/admin/book" className="btn-primary" style={{ textDecoration: "none", padding: "9px 16px", fontSize: 14 }}>
-          + New booking
-        </a>
-      </div>
+      <h1 className="display" style={{ fontSize: 26, marginBottom: 4 }}>
+        Calendar
+      </h1>
       <p className="subtle" style={{ marginBottom: 20 }}>
         {day.toLocaleDateString(undefined, {
           weekday: "long",
