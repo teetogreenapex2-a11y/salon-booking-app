@@ -14,6 +14,7 @@ type Business = {
   timezone: string;
   noShowFeeCents: number;
   cancelCutoffHours: number;
+  listed: boolean;
   logoUrl: string | null;
   accentColor: string | null;
   coverUrl: string | null;
@@ -110,6 +111,7 @@ export default function BusinessForm({ business }: { business: Business }) {
         instagram: form.instagram,
         timezone: form.timezone,
         noShowFeeCents,
+        listed: form.listed,
         cancelCutoffHours: Math.max(0, Math.round(Number(form.cancelCutoffHours) || 0)),
         accentColor: accent,
       }),
@@ -310,6 +312,20 @@ export default function BusinessForm({ business }: { business: Business }) {
           value={form.cancelCutoffHours}
           onChange={(e) => setForm({ ...form, cancelCutoffHours: Number(e.target.value) })}
         />
+        <label style={{ display: "flex", gap: 10, alignItems: "flex-start", marginTop: 12, fontSize: 14 }}>
+          <input
+            type="checkbox"
+            checked={form.listed}
+            onChange={(e) => setForm({ ...form, listed: e.target.checked })}
+            style={{ marginTop: 3, width: "auto" }}
+          />
+          <span>
+            List my salon on Hairsalonix&rsquo;s &ldquo;Find a salon&rdquo; page and in Google search.
+            <span className="subtle" style={{ display: "block", fontSize: 12 }}>
+              Turn off to keep your page private — anyone with your booking link can still book.
+            </span>
+          </span>
+        </label>
         <button className="btn-primary" type="submit" disabled={saving}>
           {saving ? "Saving…" : "Save changes"}
         </button>

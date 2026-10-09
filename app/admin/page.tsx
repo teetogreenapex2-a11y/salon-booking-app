@@ -1,4 +1,5 @@
 export const dynamic = "force-dynamic";
+import ShareLinkCard from "@/components/admin/ShareLinkCard";
 import { prisma } from "@/lib/prisma";
 import { requireOwner } from "@/lib/access";
 import Link from "next/link";
@@ -61,6 +62,8 @@ export default async function AdminDashboard({
           />
         </>
       )}
+
+      <ShareLinkCard link={`https://hairsalonix.com/${business.slug}`} name={business.name} />
 
       <div className="stat-row">
         <div className="stat-card">

@@ -1,0 +1,1 @@
+ALTER TABLE "Business" ADD COLUMN "listed" BOOLEAN NOT NULL DEFAULT true;

@@ -4,8 +4,26 @@ import { MapPin, Scissors } from "lucide-react";
 
 export const dynamic = "force-dynamic";
 
-export default async function FindASalon() {
+export const metadata = {
+  title: "Find a salon — Hairsalonix",
+  description: "Search salons and independent stylists on Hairsalonix and book online — no account needed.",
+};
+
+export default async function FindASalon({ searchParams }: { searchParams?: { q?: string } }) {
+  const q = (searchParams?.q || "").trim().slice(0, 80);
   const businesses = await prisma.business.findMany({
+    where: {
+      listed: true,
+      ...(q
+        ? {
+            OR: [
+              { name: { contains: q, mode: "insensitive" } },
+              { address: { contains: q, mode: "insensitive" } },
+              { tagline: { contains: q, mode: "insensitive" } },
+            ],
+          }
+        : {}),
+    },
     orderBy: { name: "asc" },
     include: {
       photos: { take: 1, orderBy: { order: "asc" } },
@@ -20,8 +38,21 @@ export default async function FindASalon() {
       </h1>
       <p className="tagline">Browse salons on Hairsalonix and book directly — no account needed.</p>
 
+      <form action="/find" method="get" style={{ display: "flex", gap: 8, marginTop: 16 }}>
+        <input
+          name="q"
+          defaultValue={q}
+          placeholder="Search by salon name or city"
+          aria-label="Search salons"
+          style={{ flex: 1, minWidth: 0 }}
+        />
+        <button className="btn-primary" type="submit">Search</button>
+      </form>
+
       {businesses.length === 0 ? (
-        <p className="subtle">No salons listed yet.</p>
+        <p className="subtle" style={{ marginTop: 20 }}>
+          {q ? `No salons match "${q}". Try a city or a different name.` : "No salons listed yet."}
+        </p>
       ) : (
         <div className="list" style={{ marginTop: 20 }}>
           {businesses.map((b) => {

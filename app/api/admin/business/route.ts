@@ -12,7 +12,7 @@ export async function PUT(req: NextRequest) {
   }
 
   const body = await req.json();
-  const { name, slug, tagline, address, instagram, timezone, noShowFeeCents, cancelCutoffHours } = body;
+  const { name, slug, tagline, address, instagram, timezone, noShowFeeCents, cancelCutoffHours, listed } = body;
   const accent = "accentColor" in body ? cleanAccent(body.accentColor) : undefined;
   if ("accentColor" in body && accent === undefined) {
     return NextResponse.json({ error: "Pick a valid color" }, { status: 400 });
@@ -51,6 +51,7 @@ export async function PUT(req: NextRequest) {
       ...(cleanSlug ? { slug: cleanSlug } : {}),
       ...(accent !== undefined ? { accentColor: accent } : {}),
       ...(typeof noShowFeeCents === "number" ? { noShowFeeCents } : {}),
+      ...(typeof listed === "boolean" ? { listed } : {}),
       ...(typeof cancelCutoffHours === "number" && cancelCutoffHours >= 0 && cancelCutoffHours <= 720
         ? { cancelCutoffHours: Math.round(cancelCutoffHours) }
         : {}),

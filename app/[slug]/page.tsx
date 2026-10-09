@@ -5,6 +5,24 @@ import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { MapPin, Clock, Instagram, Star, Scissors } from "lucide-react";
 
+export async function generateMetadata({ params }: { params: { slug: string } }) {
+  const b = await prisma.business.findUnique({
+    where: { slug: params.slug },
+    select: { name: true, tagline: true, address: true, coverUrl: true, logoUrl: true, listed: true },
+  });
+  if (!b) return {};
+  const description =
+    b.tagline ||
+    `Book an appointment online with ${b.name}${b.address ? ` — ${b.address}` : ""}. No account needed.`;
+  const image = b.coverUrl || b.logoUrl || undefined;
+  return {
+    title: `${b.name} — Book online`,
+    description,
+    robots: b.listed ? undefined : { index: false, follow: false },
+    openGraph: { title: b.name, description, type: "website", ...(image ? { images: [image] } : {}) },
+  };
+}
+
 export default async function BusinessPage({ params }: { params: { slug: string } }) {
   const business = await prisma.business.findUnique({
     where: { slug: params.slug },
@@ -12,8 +30,25 @@ export default async function BusinessPage({ params }: { params: { slug: string 
   });
  if (!business) notFound();
 
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@type": "HairSalon",
+    name: business.name,
+    url: `https://hairsalonix.com/${business.slug}`,
+    ...(business.tagline ? { description: business.tagline } : {}),
+    ...(business.address ? { address: business.address } : {}),
+    ...(business.coverUrl || business.logoUrl ? { image: business.coverUrl || business.logoUrl } : {}),
+    ...(business.instagram
+      ? { sameAs: [`https://instagram.com/${business.instagram.replace(/^@/, "")}`] }
+      : {}),
+  };
+
   return (
     <main className="page">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd).replace(/</g, "\\u003c") }}
+      />
       <div
         className="hero"
         style={

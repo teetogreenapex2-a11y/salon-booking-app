@@ -71,6 +71,9 @@ model Business {
   // cover photo shown at the top of the public booking page.
   accentColor  String?
   coverUrl     String?
+  // Whether the salon appears on the public "Find a salon" page and in
+  // search engines' sitemap. Its own booking link always works.
+  listed       Boolean  @default(true)
   address      String?
   instagram    String?
   timezone     String   @default("America/New_York")
