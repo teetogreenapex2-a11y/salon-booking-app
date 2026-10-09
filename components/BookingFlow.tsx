@@ -374,10 +374,10 @@ function CustomerForm({
           style={{ width: "auto", marginTop: 3, flexShrink: 0 }}
         />
         <span>
-          Text me appointment confirmation and reminder messages about my booking. Sent through
+          Optional: text me appointment confirmation and reminder messages about my booking. Sent through
           Hairsalonix on behalf of the business I'm booking with, which is operated by Tee to Green Golf.
           Message frequency varies (about 1 confirmation and 1 reminder per appointment). Msg &amp; data
-          rates may apply. Reply HELP for help, STOP to opt out. Consent is not required to book. See our{" "}
+          rates may apply. Reply STOP to cancel, HELP for help. Consent is not required to book. See our{" "}
           <a href="/terms" target="_blank" rel="noreferrer">Terms</a> and{" "}
           <a href="/privacy" target="_blank" rel="noreferrer">Privacy Policy</a>.
         </span>
