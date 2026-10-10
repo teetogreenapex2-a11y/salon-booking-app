@@ -112,6 +112,7 @@ model Business {
   bookings     Booking[]
   waitlist     WaitlistEntry[]
   joinRequests JoinRequest[]
+  campaigns    Campaign[]
   customers    Customer[]
   photos       Photo[]
   products     Product[]
@@ -253,6 +254,8 @@ model Customer {
   preferredStylistId  String?
   preferredStylist    Stylist? @relation("PreferredStylist", fields: [preferredStylistId], references: [id])
   noShowCount         Int      @default(0)
+  // Set when the customer clicks Unsubscribe in a marketing email.
+  marketingOptOut     Boolean  @default(false)
 
   bookings    Booking[]
   sales       Sale[]
@@ -462,4 +465,18 @@ model JoinRequest {
 
   @@unique([businessId, email])
   @@index([email])
+}
+
+// An email the owner sent to their customers (history only).
+model Campaign {
+  id         String   @id @default(cuid())
+  businessId String
+  business   Business @relation(fields: [businessId], references: [id])
+  subject    String
+  body       String
+  audience   String   // ALL | LAPSED
+  sentCount  Int      @default(0)
+  createdAt  DateTime @default(now())
+
+  @@index([businessId, createdAt])
 }
