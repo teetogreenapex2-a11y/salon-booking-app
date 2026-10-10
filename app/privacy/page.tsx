@@ -89,7 +89,7 @@ export default function PrivacyPolicy() {
       <Section title="Contact us">
         <p>
           Questions about this policy can be sent to{" "}
-          <a href="mailto:teetogreenapex2@gmail.com">teetogreenapex2@gmail.com</a>.
+          <a href="mailto:rcstitz52@gmail.com">rcstitz52@gmail.com</a>.
         </p>
       </Section>
     </main>

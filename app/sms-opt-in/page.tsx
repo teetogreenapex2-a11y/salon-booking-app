@@ -32,7 +32,7 @@ export default function SmsOptIn() {
       </blockquote>
       <p style={{ lineHeight: 1.7 }}>
         Reply <strong>STOP</strong> at any time to stop receiving texts, or <strong>HELP</strong> for help. For
-        support, email <a href="mailto:teetogreenapex2@gmail.com">teetogreenapex2@gmail.com</a>. Read our{" "}
+        support, email <a href="mailto:rcstitz52@gmail.com">rcstitz52@gmail.com</a>. Read our{" "}
         <a href="/terms">Terms</a> and <a href="/privacy">Privacy Policy</a>.
       </p>
     </main>

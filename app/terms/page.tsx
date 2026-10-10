@@ -43,7 +43,7 @@ export default function TermsAndConditions() {
       <Section title="Support contact">
         <p>
           For support, email{" "}
-          <a href="mailto:teetogreenapex2@gmail.com">teetogreenapex2@gmail.com</a>.
+          <a href="mailto:rcstitz52@gmail.com">rcstitz52@gmail.com</a>.
         </p>
       </Section>
 
