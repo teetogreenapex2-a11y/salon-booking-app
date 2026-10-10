@@ -1,5 +1,6 @@
 import { requireOwner } from "@/lib/access";
 import { prisma } from "@/lib/prisma";
+import { refreshConnectedStatus } from "@/lib/refreshConnect";
 import { SubscribeButton, ManageBillingButton, ConnectButton } from "@/components/admin/BillingButtons";
 
 export const dynamic = "force-dynamic";
@@ -18,7 +19,14 @@ export default async function BillingPage({
 }: {
   searchParams: { success?: string; canceled?: string; connected?: string };
 }) {
-  const business = await requireOwner();
+  let business = await requireOwner();
+  const chargesEnabled = await refreshConnectedStatus(
+    "business",
+    business.id,
+    business.stripeConnectedAccountId,
+    business.stripeChargesEnabled
+  );
+  business = { ...business, stripeChargesEnabled: chargesEnabled };
 
   const stylistCount = await prisma.stylist.count({
     where: { businessId: business.id, active: true, independentBilling: false },

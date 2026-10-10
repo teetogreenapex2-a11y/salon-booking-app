@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 import { getCurrentStylist } from "@/lib/auth";
+import { refreshConnectedStatus } from "@/lib/refreshConnect";
 import {
   StylistSubscribeButton,
   StylistManageBillingButton,
@@ -21,7 +22,7 @@ export default async function MyBillingPage({
 }: {
   searchParams: { success?: string; canceled?: string; connected?: string };
 }) {
-  const stylist = await getCurrentStylist();
+  let stylist = await getCurrentStylist();
 
   // This page only exists for booth renters — an owner has their own
   // /admin/billing, and a regular (non-booth-renting) stylist has no
@@ -29,6 +30,16 @@ export default async function MyBillingPage({
   if (!stylist || (!stylist.independentPayouts && !stylist.independentBilling)) {
     redirect("/admin/calendar");
   }
+
+  stylist = {
+    ...stylist,
+    stripeChargesEnabled: await refreshConnectedStatus(
+      "stylist",
+      stylist.id,
+      stylist.stripeConnectedAccountId,
+      stylist.stripeChargesEnabled
+    ),
+  };
 
   const status = statusDisplay(stylist.subscriptionStatus);
   const hasSubscription = !!stylist.stripeSubscriptionId;
