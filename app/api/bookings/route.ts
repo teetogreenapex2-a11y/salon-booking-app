@@ -102,7 +102,7 @@ export async function POST(req: NextRequest) {
 
   const phone = customer.phone || customerRecord?.phone;
   if (phone && smsConsent) {
-    sendSms(phone, `${business.name}: You're booked for ${when}. Change or cancel: ${manageLink} Reply STOP to cancel, HELP for help.`).catch((err) =>
+    sendSms(phone, `${business.name} via Hairsalonix: You're booked for ${when}. Change or cancel: ${manageLink} Reply STOP to cancel, HELP for help.`).catch((err) =>
       console.error("Booking confirmation SMS failed", err)
     );
   }

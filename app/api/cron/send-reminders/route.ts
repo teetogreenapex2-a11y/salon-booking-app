@@ -44,7 +44,7 @@ export async function GET(req: NextRequest) {
     if (booking.customerPhone && booking.smsConsent) {
       await sendSms(
         booking.customerPhone,
-        `Reminder from ${booking.business.name}: your ${booking.service.name} appointment is ${when}. Change or cancel: ${manageLink} Reply STOP to cancel, HELP for help.`
+        `Reminder from ${booking.business.name} via Hairsalonix: your ${booking.service.name} appointment is ${when}. Change or cancel: ${manageLink} Reply STOP to cancel, HELP for help.`
       );
     }
 
