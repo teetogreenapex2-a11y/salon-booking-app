@@ -47,18 +47,18 @@ export default function PrivacyPolicy() {
         <p>
           If you provide a phone number when booking an appointment and tick the text-message consent box, you may receive appointment
           confirmation and reminder text messages from the business you booked with, sent through our
-          platform. Message and data rates may apply. Reply <strong>STOP</strong> to any message to stop
-          receiving texts, or <strong>HELP</strong> for help. We do not sell or share your SMS opt-in
-          data or personal information with third parties for marketing purposes.
+          platform. Message frequency varies — about one confirmation and one reminder per appointment. Message and data rates may apply. Reply <strong>STOP</strong> to any message to stop
+          receiving texts, or <strong>HELP</strong> for help. We do not share, sell, or provide your mobile phone number or messaging consent data to third parties or affiliates for marketing or promotional purposes.
         </p>
         <p>
           <strong>
             No mobile information will be shared with third parties or affiliates for marketing or
             promotional purposes.
           </strong>{" "}
-          Text messaging originator opt-in data and consent are never shared with any third parties.
-          Information is shared only with the service providers listed below (such as Twilio, which delivers
-          the messages) so that we can send the texts you asked for.
+          All other categories exclude text messaging originator opt-in data and consent; this information
+          will not be shared with any third parties. Messages are delivered through our
+          messaging provider acting as a service provider on our behalf; it may not use your mobile
+          information for its own marketing.
         </p>
       </Section>
 
@@ -66,10 +66,10 @@ export default function PrivacyPolicy() {
         <p>We share information only with the service providers that help us operate the platform:</p>
         <ul>
           <li><strong>Stripe</strong> — payment processing and billing</li>
-          <li><strong>Twilio</strong> — sending text message confirmations and reminders</li>
+          <li><strong>Twilio</strong> — delivering text messages as our service provider only (never for marketing)</li>
           <li><strong>Resend</strong> — sending account sign-in and email confirmations</li>
         </ul>
-        <p>We do not sell personal information to third parties.</p>
+        <p>We do not sell personal information to third parties. We do not share mobile information or text message consent with any third party or affiliate for marketing or promotional purposes.</p>
       </Section>
 
       <Section title="Data retention">
