@@ -15,6 +15,7 @@ type Business = {
   noShowFeeCents: number;
   cancelCutoffHours: number;
   listed: boolean;
+  reviewUrl: string | null;
   logoUrl: string | null;
   accentColor: string | null;
   coverUrl: string | null;
@@ -112,6 +113,7 @@ export default function BusinessForm({ business }: { business: Business }) {
         timezone: form.timezone,
         noShowFeeCents,
         listed: form.listed,
+        reviewUrl: form.reviewUrl ?? "",
         cancelCutoffHours: Math.max(0, Math.round(Number(form.cancelCutoffHours) || 0)),
         accentColor: accent,
       }),
@@ -311,6 +313,15 @@ export default function BusinessForm({ business }: { business: Business }) {
           min="0"
           value={form.cancelCutoffHours}
           onChange={(e) => setForm({ ...form, cancelCutoffHours: Number(e.target.value) })}
+        />
+        <label className="subtle" style={{ fontSize: 12, marginTop: 8 }}>
+          Google review link (optional) — customers get one email after their visit asking for a review. Leave blank to turn this off.
+        </label>
+        <input
+          placeholder="https://g.page/r/your-salon/review"
+          type="url"
+          value={form.reviewUrl ?? ""}
+          onChange={(e) => setForm({ ...form, reviewUrl: e.target.value })}
         />
         <label style={{ display: "flex", gap: 10, alignItems: "flex-start", marginTop: 12, fontSize: 14 }}>
           <input

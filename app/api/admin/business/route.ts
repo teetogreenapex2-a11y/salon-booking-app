@@ -12,10 +12,27 @@ export async function PUT(req: NextRequest) {
   }
 
   const body = await req.json();
-  const { name, slug, tagline, address, instagram, timezone, noShowFeeCents, cancelCutoffHours, listed } = body;
+  const { name, slug, tagline, address, instagram, timezone, noShowFeeCents, cancelCutoffHours, listed, reviewUrl } = body;
   const accent = "accentColor" in body ? cleanAccent(body.accentColor) : undefined;
   if ("accentColor" in body && accent === undefined) {
     return NextResponse.json({ error: "Pick a valid color" }, { status: 400 });
+  }
+
+  // Optional review link: blank clears it; otherwise it must be an http(s) URL.
+  let cleanReview: string | null | undefined;
+  if ("reviewUrl" in body) {
+    const raw = typeof reviewUrl === "string" ? reviewUrl.trim() : "";
+    if (!raw) {
+      cleanReview = null;
+    } else {
+      try {
+        const u = new URL(raw);
+        if (u.protocol !== "https:" && u.protocol !== "http:") throw new Error("bad");
+        cleanReview = u.toString();
+      } catch {
+        return NextResponse.json({ error: "That review link doesn't look right — paste the full link starting with https://" }, { status: 400 });
+      }
+    }
   }
 
   let cleanSlug: string | undefined;
@@ -52,6 +69,7 @@ export async function PUT(req: NextRequest) {
       ...(accent !== undefined ? { accentColor: accent } : {}),
       ...(typeof noShowFeeCents === "number" ? { noShowFeeCents } : {}),
       ...(typeof listed === "boolean" ? { listed } : {}),
+      ...(cleanReview !== undefined ? { reviewUrl: cleanReview } : {}),
       ...(typeof cancelCutoffHours === "number" && cancelCutoffHours >= 0 && cancelCutoffHours <= 720
         ? { cancelCutoffHours: Math.round(cancelCutoffHours) }
         : {}),

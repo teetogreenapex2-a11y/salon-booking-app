@@ -74,6 +74,9 @@ model Business {
   // Whether the salon appears on the public "Find a salon" page and in
   // search engines' sitemap. Its own booking link always works.
   listed       Boolean  @default(true)
+  // The salon's Google (or other) review link. When set, customers get one
+  // email after a visit asking for a review. Clear it to stop.
+  reviewUrl    String?
   address      String?
   instagram    String?
   timezone     String   @default("America/New_York")
@@ -384,6 +387,7 @@ model Booking {
   paidOutsideMethod String?
 
   reminderSentAt DateTime?
+  reviewRequestedAt DateTime?
 
   sale         Sale?
 
