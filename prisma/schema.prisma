@@ -111,6 +111,7 @@ model Business {
   services     Service[]
   bookings     Booking[]
   waitlist     WaitlistEntry[]
+  joinRequests JoinRequest[]
   customers    Customer[]
   photos       Photo[]
   products     Product[]
@@ -446,4 +447,19 @@ model WaitlistEntry {
 
   @@index([businessId, day])
   @@index([stylistId, day, status])
+}
+
+// A stylist who signed up and asked to join an existing salon. The owner
+// approves (creates the Stylist row, matched to this email) or declines.
+model JoinRequest {
+  id         String   @id @default(cuid())
+  businessId String
+  business   Business @relation(fields: [businessId], references: [id])
+  name       String
+  email      String
+  status     String   @default("PENDING") // PENDING | DECLINED
+  createdAt  DateTime @default(now())
+
+  @@unique([businessId, email])
+  @@index([email])
 }
