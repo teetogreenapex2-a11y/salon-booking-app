@@ -15,6 +15,7 @@ const PRIMARY_LINKS = [
 
 // Less-frequent pages — shown as a horizontal pill row up top on phones.
 const SECONDARY_LINKS = [
+  { href: "/admin/waitlist", label: "Waitlist" },
   { href: "/admin/services", label: "Services" },
   { href: "/admin/products", label: "Products" },
   { href: "/admin/availability", label: "Hours" },

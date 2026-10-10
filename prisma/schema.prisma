@@ -110,6 +110,7 @@ model Business {
   stylists     Stylist[]
   services     Service[]
   bookings     Booking[]
+  waitlist     WaitlistEntry[]
   customers    Customer[]
   photos       Photo[]
   products     Product[]
@@ -174,6 +175,7 @@ model Stylist {
   subscriptionStatus   String?
 
   bookings    Booking[]
+  waitlist    WaitlistEntry[]
   availability Availability[]
   preferredByCustomers Customer[] @relation("PreferredStylist")
   serviceOverrides StylistService[]
@@ -194,6 +196,7 @@ model Service {
   active      Boolean  @default(true)
 
   bookings    Booking[]
+  waitlist    WaitlistEntry[]
   stylistOverrides StylistService[]
 }
 
@@ -418,4 +421,29 @@ model BusinessMember {
   createdAt  DateTime @default(now())
 
   @@index([businessId])
+}
+
+// A customer who wants a day that is fully booked. When someone cancels on
+// that day with that stylist, waiting customers get an email (first come,
+// first served). `day` is the calendar day in the salon's timezone, YYYY-MM-DD.
+model WaitlistEntry {
+  id         String   @id @default(cuid())
+  businessId String
+  business   Business @relation(fields: [businessId], references: [id])
+  stylistId  String
+  stylist    Stylist  @relation(fields: [stylistId], references: [id])
+  serviceId  String
+  service    Service  @relation(fields: [serviceId], references: [id])
+
+  name       String
+  email      String
+  phone      String?
+  day        String
+  status     String   @default("WAITING") // WAITING | NOTIFIED
+  notifiedAt DateTime?
+
+  createdAt  DateTime @default(now())
+
+  @@index([businessId, day])
+  @@index([stylistId, day, status])
 }

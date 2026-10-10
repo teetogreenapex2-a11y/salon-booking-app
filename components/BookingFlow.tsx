@@ -231,7 +231,18 @@ export default function BookingFlow({
       {loadingSlots ? (
         <p className="subtle">Loading times…</p>
       ) : slots.length === 0 ? (
-        <p className="subtle">No openings this day — try another date.</p>
+        <div>
+          <p className="subtle">No openings this day — try another date, or join the waitlist.</p>
+          {stylist && service && (
+            <WaitlistJoin
+              key={`${stylist.id}-${service.id}-${week[dateIdx].toDateString()}`}
+              stylistId={stylist.id}
+              serviceId={service.id}
+              date={week[dateIdx]}
+              customer={customer}
+            />
+          )}
+        </div>
       ) : (
         <div className="slot-grid">
           {slots.map((m) => (
@@ -425,4 +436,55 @@ function minutesToLabel(mins: number) {
   const period = h >= 12 ? "PM" : "AM";
   const displayHour = h % 12 === 0 ? 12 : h % 12;
   return `${displayHour}:${m.toString().padStart(2, "0")} ${period}`;
+}
+
+function WaitlistJoin({
+  stylistId,
+  serviceId,
+  date,
+  customer,
+}: {
+  stylistId: string;
+  serviceId: string;
+  date: Date;
+  customer: { name: string; email: string; phone: string };
+}) {
+  const [state, setState] = useState<"idle" | "sending" | "done">("idle");
+  const [error, setError] = useState("");
+  const pad = (n: number) => String(n).padStart(2, "0");
+  const day = `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
+
+  if (state === "done") {
+    return <p style={{ fontWeight: 500 }}>You're on the waitlist. We'll email you if a spot opens up.</p>;
+  }
+  return (
+    <div>
+      <button
+        className="btn-ghost"
+        disabled={state === "sending"}
+        onClick={async () => {
+          setError("");
+          if (!customer.name || !customer.email) {
+            setError("Fill in your name and email above first.");
+            return;
+          }
+          setState("sending");
+          const res = await fetch("/api/waitlist", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ stylistId, serviceId, day, ...customer }),
+          });
+          if (res.ok) setState("done");
+          else {
+            const d = await res.json().catch(() => ({}));
+            setError(d.error || "Couldn't join the waitlist — try again.");
+            setState("idle");
+          }
+        }}
+      >
+        {state === "sending" ? "Joining…" : "Join the waitlist for this day"}
+      </button>
+      {error && <p style={{ color: "#a33", marginTop: 6 }}>{error}</p>}
+    </div>
+  );
 }

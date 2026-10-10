@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { sendEmail } from "@/lib/email";
 import { syncBookingToGoogle } from "@/lib/googleCalendar";
 import { bookingByToken } from "@/lib/manageBooking";
+import { notifyWaitlist } from "@/lib/waitlist";
 import { changeStatus, formatWhen } from "@/lib/manage";
 
 export async function POST(_req: NextRequest, { params }: { params: { token: string } }) {
@@ -22,6 +23,7 @@ export async function POST(_req: NextRequest, { params }: { params: { token: str
 
   await prisma.booking.update({ where: { id: booking.id }, data: { status: "CANCELLED" } });
   await syncBookingToGoogle(booking.id);
+  await notifyWaitlist(booking.id);
 
   const when = formatWhen(booking.startsAt, booking.business.timezone);
 
