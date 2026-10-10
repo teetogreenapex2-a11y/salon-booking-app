@@ -46,8 +46,7 @@ export default function PrivacyPolicy() {
       <Section title="Text messages (SMS)">
         <p>
           If you provide a phone number when booking an appointment and tick the text-message consent box, you may receive appointment
-          confirmation and reminder text messages from the business you booked with, sent through our
-          platform. Message frequency varies — about one confirmation and one reminder per appointment. Message and data rates may apply. Reply <strong>STOP</strong> to any message to stop
+          confirmation and reminder text messages from Hairsalonix about your booking. Message frequency varies — about one confirmation and one reminder per appointment. Message and data rates may apply. Reply <strong>STOP</strong> to any message to stop
           receiving texts, or <strong>HELP</strong> for help. We do not share, sell, or provide your mobile phone number or messaging consent data to third parties or affiliates for marketing or promotional purposes.
         </p>
         <p>

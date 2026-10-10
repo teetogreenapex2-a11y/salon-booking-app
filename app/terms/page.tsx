@@ -16,7 +16,7 @@ export default function TermsAndConditions() {
         <p>
           Hairsalonix, a business of Rick Stitzer, provides online booking software for salons and independent stylists. When you
           book an appointment through a Hairsalonix-powered booking page and provide your phone number and tick the text-message consent box,
-          the business you booked with may send you text messages confirming your appointment and
+          Hairsalonix will send you text messages confirming your appointment and
           reminding you of it before your scheduled time.
         </p>
       </Section>

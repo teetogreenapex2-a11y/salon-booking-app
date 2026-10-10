@@ -15,7 +15,7 @@ export default function SmsOptIn() {
       </p>
 
       <p style={{ lineHeight: 1.7, marginBottom: 16 }}>
-        Clients of salons and stylists that use Hairsalonix can choose to receive text messages about their
+        Clients who book through Hairsalonix can choose to receive text messages from Hairsalonix about their
         own appointments. This is the opt-in shown on every booking page, right under the phone number
         field. The box is optional, never pre-checked, and booking does not require it.
       </p>

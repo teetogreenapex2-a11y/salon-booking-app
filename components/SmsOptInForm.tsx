@@ -27,8 +27,8 @@ export default function SmsOptInForm() {
           style={{ width: "auto", marginTop: 3, flexShrink: 0 }}
         />
         <span>
-          Optional: text me appointment confirmation and reminder messages about my booking. Sent by
-          Hairsalonix on behalf of the business I&apos;m booking with.
+          Optional: I agree to receive appointment confirmation and reminder text messages from
+          Hairsalonix about my booking.
           Message frequency varies (about 1 confirmation and 1 reminder per appointment). Msg &amp; data
           rates may apply. Reply STOP to cancel, HELP for help. Consent is not required to book. See our{" "}
           <a href="/terms">Terms</a> and <a href="/privacy">Privacy Policy</a>.
