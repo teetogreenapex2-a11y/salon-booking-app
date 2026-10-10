@@ -10,7 +10,7 @@ export default function PrivacyPolicy() {
 
       <Section title="Who we are">
         <p>
-          Hairsalonix ("Hairsalonix," "we," "us") provides online booking software that salons and
+          Hairsalonix ("Hairsalonix," "we," "us"), a business of Rick Stitzer, provides online booking software that salons and
           independent stylists ("businesses") use to run their own scheduling pages. This policy covers
           both the businesses that use Hairsalonix and the customers who book appointments through a
           Hairsalonix-powered booking page.

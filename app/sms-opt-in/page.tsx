@@ -11,7 +11,7 @@ export default function SmsOptIn() {
         Text message sign-up
       </h1>
       <p className="subtle" style={{ marginBottom: 24 }}>
-        Hairsalonix Appointment Notifications
+        Hairsalonix Appointment Notifications, a business of Rick Stitzer
       </p>
 
       <p style={{ lineHeight: 1.7, marginBottom: 16 }}>
