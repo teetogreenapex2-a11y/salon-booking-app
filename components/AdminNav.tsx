@@ -17,6 +17,8 @@ const PRIMARY_LINKS = [
 const SECONDARY_LINKS = [
   { href: "/admin/waitlist", label: "Waitlist" },
   { href: "/admin/marketing", label: "Email" },
+  { href: "/admin/gift-cards", label: "Gift cards" },
+  { href: "/admin/memberships", label: "Memberships" },
   { href: "/admin/services", label: "Services" },
   { href: "/admin/products", label: "Products" },
   { href: "/admin/availability", label: "Hours" },

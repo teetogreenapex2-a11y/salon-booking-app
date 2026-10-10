@@ -58,6 +58,18 @@ export async function POST(req: NextRequest) {
         },
       });
 
+  // Paid-up members get their plan's discount automatically.
+  let priceCents = info.priceCents;
+  if (customerRecord) {
+    const membership = await prisma.membership.findUnique({
+      where: { customerId: customerRecord.id },
+      include: { plan: true },
+    });
+    if (membership && membership.status === "ACTIVE" && membership.paidThrough >= new Date()) {
+      priceCents = Math.round((info.priceCents * (100 - membership.plan.discountPct)) / 100);
+    }
+  }
+
   const booking = await prisma.booking.create({
     data: {
       businessId: business.id,
@@ -65,7 +77,7 @@ export async function POST(req: NextRequest) {
       serviceId,
       startsAt: start,
       endsAt: end,
-      priceCents: info.priceCents,
+      priceCents,
       customerId: customerRecord?.id,
       customerName: customer.name,
       customerEmail: customer.email,
@@ -101,7 +113,7 @@ export async function POST(req: NextRequest) {
   const payBlock = stylistRecord
     ? payEmailBlock(
         stylistRecord,
-        info.priceCents,
+        priceCents,
         `${info.service.name} with ${stylistRecord.name}`,
         stylistRecord.name.split(" ")[0]
       )

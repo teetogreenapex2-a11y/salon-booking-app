@@ -120,6 +120,7 @@ export default async function BookingsPage() {
                         cashAppHandle={b.stylist.cashAppHandle}
                         zelleInfo={b.stylist.zelleInfo}
                         paidMethod={b.paidOutsideMethod}
+                        creditCents={b.giftCardCents}
                       />
                     )}
                     {b.sale && (

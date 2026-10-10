@@ -113,6 +113,9 @@ model Business {
   waitlist     WaitlistEntry[]
   joinRequests JoinRequest[]
   campaigns    Campaign[]
+  giftCards    GiftCard[]
+  membershipPlans MembershipPlan[]
+  memberships  Membership[]
   customers    Customer[]
   photos       Photo[]
   products     Product[]
@@ -259,6 +262,7 @@ model Customer {
 
   bookings    Booking[]
   sales       Sale[]
+  membership  Membership?
 
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
@@ -395,6 +399,8 @@ model Booking {
 
   reminderSentAt DateTime?
   reviewRequestedAt DateTime?
+  // Total of gift card balance applied to this booking's bill.
+  giftCardCents Int @default(0)
 
   sale         Sale?
 
@@ -479,4 +485,66 @@ model Campaign {
   createdAt  DateTime @default(now())
 
   @@index([businessId, createdAt])
+}
+
+// Gift cards the salon sells in person (or any way it likes) and redeems at
+// checkout. Money isn't processed here — the owner records the sale.
+model GiftCard {
+  id            String   @id @default(cuid())
+  businessId    String
+  business      Business @relation(fields: [businessId], references: [id])
+  code          String   @unique
+  initialCents  Int
+  balanceCents  Int
+  recipientName String?
+  purchaserName String?
+  note          String?
+  voided        Boolean  @default(false)
+  uses          GiftCardUse[]
+  createdAt     DateTime @default(now())
+
+  @@index([businessId])
+}
+
+model GiftCardUse {
+  id          String   @id @default(cuid())
+  giftCardId  String
+  giftCard    GiftCard @relation(fields: [giftCardId], references: [id])
+  bookingId   String?
+  amountCents Int
+  createdAt   DateTime @default(now())
+
+  @@index([bookingId])
+}
+
+// A membership plan: monthly price and a % off every service while active.
+model MembershipPlan {
+  id          String   @id @default(cuid())
+  businessId  String
+  business    Business @relation(fields: [businessId], references: [id])
+  name        String
+  priceCents  Int
+  discountPct Int
+  active      Boolean  @default(true)
+  members     Membership[]
+  createdAt   DateTime @default(now())
+
+  @@index([businessId])
+}
+
+// One membership per customer. The owner records each month's payment,
+// which moves paidThrough forward; the discount applies while it's current.
+model Membership {
+  id          String   @id @default(cuid())
+  businessId  String
+  business    Business @relation(fields: [businessId], references: [id])
+  planId      String
+  plan        MembershipPlan @relation(fields: [planId], references: [id])
+  customerId  String   @unique
+  customer    Customer @relation(fields: [customerId], references: [id])
+  paidThrough DateTime
+  status      String   @default("ACTIVE") // ACTIVE | CANCELLED
+  createdAt   DateTime @default(now())
+
+  @@index([businessId])
 }
