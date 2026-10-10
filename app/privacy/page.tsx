@@ -51,6 +51,15 @@ export default function PrivacyPolicy() {
           receiving texts, or <strong>HELP</strong> for help. We do not sell or share your SMS opt-in
           data or personal information with third parties for marketing purposes.
         </p>
+        <p>
+          <strong>
+            No mobile information will be shared with third parties or affiliates for marketing or
+            promotional purposes.
+          </strong>{" "}
+          Text messaging originator opt-in data and consent are never shared with any third parties.
+          Information is shared only with the service providers listed below (such as Twilio, which delivers
+          the messages) so that we can send the texts you asked for.
+        </p>
       </Section>
 
       <Section title="Who we share information with">

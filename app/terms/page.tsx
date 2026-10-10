@@ -53,6 +53,10 @@ export default function TermsAndConditions() {
           not a condition of booking. See our <a href="/privacy">Privacy Policy</a> for how we handle your
           information.
         </p>
+        <p>
+          No mobile information will be shared with third parties or affiliates for marketing or promotional
+          purposes. Text messaging originator opt-in data and consent will not be shared with any third parties.
+        </p>
       </Section>
 
       <Section title="Use of the platform">
