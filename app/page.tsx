@@ -140,6 +140,16 @@ export default async function MarketingHome({
                 ["No-show protection", "A card on file at booking, so you can charge your own no-show fee with one click when a client doesn’t show."],
                 ["Payments to your own account", "Connected through your own Stripe account, so customer charges land directly in your business’s bank account."],
                 ["Photo gallery", "Show off real work right on your public booking page."],
+                ["Email confirmations & reminders", "Clients get an email confirmation right after booking and a reminder before the appointment."],
+                ["Client self-service", "Clients reschedule or cancel from a private link in their confirmation, within the cancellation window you set."],
+                ["Waitlists", "When a day is full, clients join the waitlist. If someone cancels, everyone waiting gets an email and the first to book gets the spot."],
+                ["Review requests", "After a visit, clients get one email with your Google review link — never more than once a month per client."],
+                ["Email marketing", "Send promos or a “we miss you” note to all clients or just those who haven’t visited in 60+ days, with one-click unsubscribe built in."],
+                ["Gift cards", "Create gift cards with a code, email them to the recipient, and redeem them at checkout. Partial balances carry over."],
+                ["Memberships", "Monthly plans with an automatic discount on services while the member is paid up."],
+                ["Retail / product sales", "Sell the hair products you use and recommend, rung up right on the appointment, with per-stylist commission."],
+                ["Your own app for clients", "Every salon gets a home-screen app for its clients, a shareable QR code, and a listing in the find-a-salon directory."],
+                ["Stylists join your salon", "A stylist signs up, asks to join with your salon’s address, and you approve them in one click."],
                 ["Built for solo stylists too", "An independent account works exactly like a one-person salon — same features, same simple price."],
               ].map(([title, body]) => (
                 <div className="mkt-card" key={title}>
@@ -181,16 +191,11 @@ export default async function MarketingHome({
 
             <div className="mkt-grid-3">
               {[
-                ["SMS & email reminders", "Automatic day-before text reminders and email confirmations."],
+                ["SMS text reminders", "Day-before text reminders. Email reminders are live now; texting is waiting on carrier approval."],
                 ["Deposits at booking", "Require a prepayment up front for higher-value services."],
                 ["Per-stylist payouts", "Booth renters sharing a salon calendar get paid directly to their own account."],
-                ["Client self-service", "Customers reschedule or cancel their own appointment from a link."],
-                ["Waitlists", "Automatically fill last-minute cancellations."],
-                ["Memberships & gift cards", "Sell bundles, recurring plans, and gift cards online."],
-                ["Calendar sync", "Two-way sync with Google and Outlook calendars per stylist."],
-                ["Review requests", "Automatic post-visit requests for reviews."],
-                ["Email marketing", "Simple campaigns to bring past clients back."],
-                ["Retail / product sales", "Let stylists sell the hair products they use and recommend, right from their page."],
+                ["Online gift cards & automatic membership billing", "Clients buy gift cards and join memberships online, with monthly billing handled for you."],
+                ["Calendar sync, both ways", "Bookings already push to a stylist’s Google Calendar. Blocking busy times from it, plus Outlook, is next."],
                 ["Lower payment processing rates", "As more salons process through the platform, we negotiate better rates and pass the savings straight through — no markup, ever."],
               ].map(([title, body]) => (
                 <div className="mkt-card" style={{ background: "var(--mk-blush)", borderColor: "transparent" }} key={title}>
