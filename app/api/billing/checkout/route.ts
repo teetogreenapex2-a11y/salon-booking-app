@@ -10,54 +10,62 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Not signed in" }, { status: 401 });
   }
 
-  let customerId = business.stripeCustomerId;
-  if (!customerId) {
-    const customer = await stripe.customers.create({
-      email: user.email,
-      name: business.name,
-      metadata: { businessId: business.id },
+  try {
+    let customerId = business.stripeCustomerId;
+    if (!customerId) {
+      const customer = await stripe.customers.create({
+        email: user.email,
+        name: business.name,
+        metadata: { businessId: business.id },
+      });
+      customerId = customer.id;
+      await prisma.business.update({
+        where: { id: business.id },
+        data: { stripeCustomerId: customerId },
+      });
+    }
+
+    const activeStylistCount = await prisma.stylist.count({
+      where: { businessId: business.id, active: true, independentBilling: false },
     });
-    customerId = customer.id;
-    await prisma.business.update({
-      where: { id: business.id },
-      data: { stripeCustomerId: customerId },
-    });
-  }
+    const addOnQty = addOnQuantityFor(activeStylistCount);
 
-  const activeStylistCount = await prisma.stylist.count({
-    where: { businessId: business.id, active: true, independentBilling: false },
-  });
-  const addOnQty = addOnQuantityFor(activeStylistCount);
+    const lineItems: { price: string; quantity: number }[] = [
+      { price: STRIPE_PRICE_BASE, quantity: 1 },
+    ];
+    if (addOnQty > 0) {
+      lineItems.push({ price: STRIPE_PRICE_STYLIST, quantity: addOnQty });
+    }
 
-  const lineItems: { price: string; quantity: number }[] = [
-    { price: STRIPE_PRICE_BASE, quantity: 1 },
-  ];
-  if (addOnQty > 0) {
-    lineItems.push({ price: STRIPE_PRICE_STYLIST, quantity: addOnQty });
-  }
+    const origin = req.headers.get("origin") || `https://${process.env.VERCEL_URL}`;
 
-  const origin = req.headers.get("origin") || `https://${process.env.VERCEL_URL}`;
+    // If they're still inside their free trial, Checkout honors that trial_end
+    // instead of charging immediately. Stripe requires trial_end to be at
+    // least an hour in the future, so anything closer just skips the trial.
+    const trialEnd =
+      business.trialEndsAt && business.trialEndsAt.getTime() > Date.now() + 60 * 60 * 1000
+        ? Math.floor(business.trialEndsAt.getTime() / 1000)
+        : undefined;
 
-  // If they're still inside their free trial, Checkout honors that trial_end
-  // instead of charging immediately. Stripe requires trial_end to be at
-  // least an hour in the future, so anything closer just skips the trial.
-  const trialEnd =
-    business.trialEndsAt && business.trialEndsAt.getTime() > Date.now() + 60 * 60 * 1000
-      ? Math.floor(business.trialEndsAt.getTime() / 1000)
-      : undefined;
-
-  const session = await stripe.checkout.sessions.create({
-    mode: "subscription",
-    customer: customerId,
-    line_items: lineItems,
-    success_url: `${origin}/admin/billing?success=1`,
-    cancel_url: `${origin}/admin/billing?canceled=1`,
-    metadata: { businessId: business.id },
-    subscription_data: {
+    const session = await stripe.checkout.sessions.create({
+      mode: "subscription",
+      customer: customerId,
+      line_items: lineItems,
+      success_url: `${origin}/admin/billing?success=1`,
+      cancel_url: `${origin}/admin/billing?canceled=1`,
       metadata: { businessId: business.id },
-      trial_end: trialEnd,
-    },
-  });
+      subscription_data: {
+        metadata: { businessId: business.id },
+        trial_end: trialEnd,
+      },
+    });
 
-  return NextResponse.json({ url: session.url });
+    return NextResponse.json({ url: session.url });
+  } catch (e: any) {
+    console.error("Stripe request failed:", e);
+    return NextResponse.json(
+      { error: "Stripe said: " + (e?.message || "unknown error") },
+      { status: 500 }
+    );
+  }
 }

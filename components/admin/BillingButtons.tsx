@@ -2,19 +2,30 @@
 
 import { useState } from "react";
 
+// Posts to a billing route and follows the Stripe link it returns. If the
+// server fails, it shows Stripe's actual message instead of hanging.
+async function goToStripe(path: string, fallback: string) {
+  try {
+    const res = await fetch(path, { method: "POST" });
+    const data = await res.json().catch(() => ({}));
+    if (data.url) {
+      window.location.href = data.url;
+      return true;
+    }
+    alert(data.error || fallback);
+  } catch {
+    alert("Couldn't reach the server — try again.");
+  }
+  return false;
+}
+
 export function SubscribeButton() {
   const [loading, setLoading] = useState(false);
 
   async function handleClick() {
     setLoading(true);
-    const res = await fetch("/api/billing/checkout", { method: "POST" });
-    const data = await res.json();
-    if (data.url) {
-      window.location.href = data.url;
-    } else {
-      setLoading(false);
-      alert("Something went wrong starting checkout — try again.");
-    }
+    const ok = await goToStripe("/api/billing/checkout", "Something went wrong — try again.");
+    if (!ok) setLoading(false);
   }
 
   return (
@@ -29,14 +40,8 @@ export function ManageBillingButton() {
 
   async function handleClick() {
     setLoading(true);
-    const res = await fetch("/api/billing/portal", { method: "POST" });
-    const data = await res.json();
-    if (data.url) {
-      window.location.href = data.url;
-    } else {
-      setLoading(false);
-      alert("Something went wrong opening billing — try again.");
-    }
+    const ok = await goToStripe("/api/billing/portal", "Something went wrong — try again.");
+    if (!ok) setLoading(false);
   }
 
   return (
@@ -51,18 +56,8 @@ export function ConnectButton({ alreadyConnected }: { alreadyConnected: boolean 
 
   async function handleClick() {
     setLoading(true);
-    try {
-      const res = await fetch("/api/billing/connect", { method: "POST" });
-      const data = await res.json().catch(() => ({}));
-      if (data.url) {
-        window.location.href = data.url;
-        return;
-      }
-      alert(data.error || "Something went wrong — try again.");
-    } catch {
-      alert("Couldn't reach the server — try again.");
-    }
-    setLoading(false);
+    const ok = await goToStripe("/api/billing/connect", "Something went wrong — try again.");
+    if (!ok) setLoading(false);
   }
 
   return (
@@ -80,14 +75,8 @@ export function StylistSubscribeButton() {
 
   async function handleClick() {
     setLoading(true);
-    const res = await fetch("/api/stylist/checkout", { method: "POST" });
-    const data = await res.json();
-    if (data.url) {
-      window.location.href = data.url;
-    } else {
-      setLoading(false);
-      alert(data.error || "Something went wrong starting checkout — try again.");
-    }
+    const ok = await goToStripe("/api/stylist/checkout", "Something went wrong — try again.");
+    if (!ok) setLoading(false);
   }
 
   return (
@@ -102,14 +91,8 @@ export function StylistManageBillingButton() {
 
   async function handleClick() {
     setLoading(true);
-    const res = await fetch("/api/stylist/portal", { method: "POST" });
-    const data = await res.json();
-    if (data.url) {
-      window.location.href = data.url;
-    } else {
-      setLoading(false);
-      alert(data.error || "Something went wrong opening billing — try again.");
-    }
+    const ok = await goToStripe("/api/stylist/portal", "Something went wrong — try again.");
+    if (!ok) setLoading(false);
   }
 
   return (
@@ -124,18 +107,8 @@ export function StylistConnectButton({ alreadyConnected }: { alreadyConnected: b
 
   async function handleClick() {
     setLoading(true);
-    try {
-      const res = await fetch("/api/stylist/connect", { method: "POST" });
-      const data = await res.json().catch(() => ({}));
-      if (data.url) {
-        window.location.href = data.url;
-        return;
-      }
-      alert(data.error || "Something went wrong — try again.");
-    } catch {
-      alert("Couldn't reach the server — try again.");
-    }
-    setLoading(false);
+    const ok = await goToStripe("/api/stylist/connect", "Something went wrong — try again.");
+    if (!ok) setLoading(false);
   }
 
   return (

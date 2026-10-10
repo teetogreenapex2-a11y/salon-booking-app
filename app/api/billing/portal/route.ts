@@ -8,12 +8,20 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "No billing account yet" }, { status: 400 });
   }
 
-  const origin = req.headers.get("origin") || `https://${process.env.VERCEL_URL}`;
+  try {
+    const origin = req.headers.get("origin") || `https://${process.env.VERCEL_URL}`;
 
-  const session = await stripe.billingPortal.sessions.create({
-    customer: business.stripeCustomerId,
-    return_url: `${origin}/admin/billing`,
-  });
+    const session = await stripe.billingPortal.sessions.create({
+      customer: business.stripeCustomerId,
+      return_url: `${origin}/admin/billing`,
+    });
 
-  return NextResponse.json({ url: session.url });
+    return NextResponse.json({ url: session.url });
+  } catch (e: any) {
+    console.error("Stripe request failed:", e);
+    return NextResponse.json(
+      { error: "Stripe said: " + (e?.message || "unknown error") },
+      { status: 500 }
+    );
+  }
 }
