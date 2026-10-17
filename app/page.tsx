@@ -141,13 +141,14 @@ export default async function MarketingHome({
                 ["Payments to your own account", "Connected through your own Stripe account, so customer charges land directly in your business’s bank account."],
                 ["Photo gallery", "Show off real work right on your public booking page."],
                 ["Email confirmations & reminders", "Clients get an email confirmation right after booking and a reminder before the appointment."],
+                ["Text message confirmations & reminders", "Clients who opt in get a text when they book and a reminder before the appointment, with a link to change or cancel. Optional for the client, and STOP works any time."],
                 ["Client self-service", "Clients reschedule or cancel from a private link in their confirmation, within the cancellation window you set."],
                 ["Waitlists", "When a day is full, clients join the waitlist. If someone cancels, everyone waiting gets an email and the first to book gets the spot."],
                 ["Review requests", "After a visit, clients get one email with your Google review link — never more than once a month per client."],
                 ["Email marketing", "Send promos or a “we miss you” note to all clients or just those who haven’t visited in 60+ days, with one-click unsubscribe built in."],
                 ["Gift cards", "Create gift cards with a code, email them to the recipient, and redeem them at checkout. Partial balances carry over."],
                 ["Memberships", "Monthly plans with an automatic discount on services while the member is paid up."],
-                ["Retail / product sales", "Sell the hair products you use and recommend, rung up right on the appointment, with per-stylist commission."],
+                ["Inventory & retail profit", "Track stock and what you pay for each product, get low-stock warnings, ring up sales on the appointment (card, Venmo, Cash App, Zelle or cash), and see sales, cost and profit in Reports. Per-stylist commission included."],
                 ["Your own app for clients", "Every salon gets a home-screen app for its clients, a shareable QR code, and a listing in the find-a-salon directory."],
                 ["Stylists join your salon", "A stylist signs up, asks to join with your salon’s address, and you approve them in one click."],
                 ["Built for solo stylists too", "An independent account works exactly like a one-person salon — same features, same simple price."],
@@ -191,7 +192,6 @@ export default async function MarketingHome({
 
             <div className="mkt-grid-3">
               {[
-                ["SMS text reminders", "Day-before text reminders. Email reminders are live now; texting is waiting on carrier approval."],
                 ["Deposits at booking", "Require a prepayment up front for higher-value services."],
                 ["Per-stylist payouts", "Booth renters sharing a salon calendar get paid directly to their own account."],
                 ["Online gift cards & automatic membership billing", "Clients buy gift cards and join memberships online, with monthly billing handled for you."],
@@ -252,7 +252,7 @@ export default async function MarketingHome({
 
                 <div style={{ padding: "16px 18px", fontSize: 14, fontWeight: 700, background: "var(--mk-blush)" }}>Hairsalonix</div>
                 <div style={{ padding: "16px 18px", fontSize: 14, background: "var(--mk-blush)" }}>$20/mo (+$10/stylist)</div>
-                <div style={{ padding: "16px 18px", fontSize: 14, background: "var(--mk-blush)" }}>Coming soon</div>
+                <div style={{ padding: "16px 18px", fontSize: 14, background: "var(--mk-blush)" }}>Included, no per-text fees</div>
                 <div style={{ padding: "16px 18px", fontSize: 14, background: "var(--mk-blush)" }}>Stripe&rsquo;s standard rate, zero markup</div>
 
                 <div style={{ padding: "16px 18px", fontSize: 14, borderTop: "1px solid var(--mk-line)" }}>Booksy</div>
