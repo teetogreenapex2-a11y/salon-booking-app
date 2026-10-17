@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { sendEmail } from "@/lib/email";
 import { getPlatformAdminEmail } from "@/lib/platform";
+import { deleteBusinessCompletely } from "@/lib/deleteBusiness";
 
 export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
   if (!(await getPlatformAdminEmail())) {
@@ -36,4 +37,18 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
     }
   }
   return NextResponse.json({ ok: true, status });
+}
+
+export async function DELETE(_req: NextRequest, { params }: { params: { id: string } }) {
+  if (!(await getPlatformAdminEmail())) {
+    return NextResponse.json({ error: "Not allowed" }, { status: 403 });
+  }
+  try {
+    const result = await deleteBusinessCompletely(params.id);
+    if (!result.ok) return NextResponse.json({ error: result.error }, { status: 400 });
+    return NextResponse.json({ ok: true });
+  } catch (e) {
+    console.error("[platform] delete failed", e);
+    return NextResponse.json({ error: "Delete failed" }, { status: 500 });
+  }
 }

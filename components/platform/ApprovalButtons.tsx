@@ -18,6 +18,19 @@ export default function ApprovalButtons({ id, status }: { id: string; status: st
     router.refresh();
   }
 
+  async function remove() {
+    if (!window.confirm("Permanently delete this salon, its owner login and ALL its data? This cannot be undone.")) return;
+    setBusy(true);
+    const res = await fetch(`/api/platform/businesses/${id}`, { method: "DELETE" });
+    setBusy(false);
+    if (!res.ok) {
+      const d = await res.json().catch(() => ({}));
+      window.alert(d.error || "Delete failed");
+      return;
+    }
+    router.refresh();
+  }
+
   return (
     <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
       {status !== "APPROVED" && (
@@ -35,6 +48,9 @@ export default function ApprovalButtons({ id, status }: { id: string; status: st
           Set back to pending
         </button>
       )}
+      <button className="btn-ghost" disabled={busy} onClick={remove} style={{ color: "#b00020" }}>
+        Delete
+      </button>
     </div>
   );
 }
