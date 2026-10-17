@@ -10,6 +10,8 @@ workflows:
       # Team settings (same key BookMyPro uses - "codemagic").
       app_store_connect: codemagic
     environment:
+      groups:
+        - hairsalonix_signing
       vars:
         XCODE_PROJECT: "ios/App/App.xcodeproj"
         XCODE_SCHEME: "App"
@@ -63,9 +65,15 @@ workflows:
           cd ../..
       - name: Create/fetch signing certificate and profile automatically
         script: |
+          if [ -z "$CERTIFICATE_PRIVATE_KEY" ]; then
+            echo "STOP: CERTIFICATE_PRIVATE_KEY is EMPTY - the variable group is not reaching this build"
+            exit 1
+          fi
+          echo "OK: CERTIFICATE_PRIVATE_KEY is set (${#CERTIFICATE_PRIVATE_KEY} characters)"
           keychain initialize
           app-store-connect fetch-signing-files "com.hairsalonix.app" \
             --type IOS_APP_STORE \
+            --certificate-key @env:CERTIFICATE_PRIVATE_KEY \
             --create
           keychain add-certificates
       - name: Set up code signing settings on Xcode project
