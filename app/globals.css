@@ -680,16 +680,24 @@ body {
   padding-bottom: calc(96px + env(safe-area-inset-bottom));
 }
 
-/* --- Inside the iOS app: respect the status bar / notch and keep the header pinned --- */
+/* --- Inside the iOS app: keep everything clear of the status bar / notch --- */
+html.native-app body {
+  padding-top: env(safe-area-inset-top);
+}
+/* Solid strip behind the clock/battery so scrolling content never shows through it. */
+html.native-app::before {
+  content: "";
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: env(safe-area-inset-top);
+  background: #faf6f3;
+  z-index: 1000;
+}
+html.native-app .hx-sticky-top,
 html.native-app .admin-nav {
   position: sticky;
-  top: 0;
+  top: env(safe-area-inset-top);
   z-index: 40;
-  padding-top: calc(12px + env(safe-area-inset-top));
-}
-html.native-app .page {
-  padding-top: calc(40px + env(safe-area-inset-top));
-}
-html.native-app .admin-page {
-  padding-top: 16px;
 }

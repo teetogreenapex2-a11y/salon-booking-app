@@ -60,7 +60,7 @@ export default async function MarketingHome({
 
       <div className="mkt">
         {/* NAV */}
-        <div style={{ position: "sticky", top: 0, zIndex: 20, background: "rgba(250,246,243,0.92)", backdropFilter: "blur(6px)", borderBottom: "1px solid var(--mk-line)" }}>
+        <div className="hx-sticky-top" style={{ position: "sticky", top: 0, zIndex: 20, background: "rgba(250,246,243,0.92)", backdropFilter: "blur(6px)", borderBottom: "1px solid var(--mk-line)" }}>
           <div className="mkt-wrap" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", height: 76 }}>
             <div className="mkt-display" style={{ fontSize: 22, fontWeight: 600 }}>Hairsalonix</div>
             <div className="mkt-nav-links">
