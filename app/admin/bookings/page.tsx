@@ -6,6 +6,7 @@ import CancelBookingButton from "@/components/CancelBookingButton";
 import MarkNoShowButton from "@/components/admin/MarkNoShowButton";
 import ChargeNoShowFeeButton from "@/components/admin/ChargeNoShowFeeButton";
 import SellProductsButton from "@/components/admin/SellProductsButton";
+import AddServiceToBill from "@/components/admin/AddServiceToBill";
 import CollectPaymentButton from "@/components/admin/CollectPaymentButton";
 
 export const dynamic = "force-dynamic";
@@ -13,16 +14,21 @@ export const dynamic = "force-dynamic";
 export default async function BookingsPage() {
   const business = await requireOwner();
 
-  const [bookings, products] = await Promise.all([
+  const [bookings, products, services] = await Promise.all([
     prisma.booking.findMany({
       where: { businessId: business.id },
       orderBy: { startsAt: "desc" },
-      include: { service: true, stylist: true, customer: true, sale: true },
+      include: { service: true, stylist: true, customer: true, sale: true, extras: true },
       take: 100,
     }),
     prisma.product.findMany({
       where: { businessId: business.id, active: true },
       orderBy: { name: "asc" },
+    }),
+    prisma.service.findMany({
+      where: { businessId: business.id, active: true },
+      orderBy: { name: "asc" },
+      select: { id: true, name: true },
     }),
   ]);
 
@@ -110,6 +116,13 @@ export default async function BookingsPage() {
                     )}
                     {b.status !== "CANCELLED" && !b.sale && hasCard && products.length > 0 && (
                       <SellProductsButton bookingId={b.id} products={products} />
+                    )}
+                    {b.status !== "CANCELLED" && b.status !== "NO_SHOW" && !b.paidOutsideAt && (
+                      <AddServiceToBill
+                        bookingId={b.id}
+                        services={services}
+                        extras={b.extras.map((e) => ({ id: e.id, name: e.name, priceCents: e.priceCents }))}
+                      />
                     )}
                     {b.status !== "CANCELLED" && b.status !== "NO_SHOW" && (
                       <CollectPaymentButton

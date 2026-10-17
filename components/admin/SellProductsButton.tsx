@@ -2,8 +2,9 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import BarcodeScanner from "@/components/admin/BarcodeScanner";
 
-type Product = { id: string; name: string; priceCents: number; stockQty: number };
+type Product = { id: string; barcode?: string | null; name: string; priceCents: number; stockQty: number };
 
 export default function SellProductsButton({
   bookingId,
@@ -21,6 +22,22 @@ export default function SellProductsButton({
   const [method, setMethod] = useState<string>("Card");
 
   const inStock = products.filter((p) => p.stockQty > 0);
+  const [scanning, setScanning] = useState(false);
+  const [scanMsg, setScanMsg] = useState("");
+
+  function handleScan(code: string) {
+    const p = products.find((x) => x.barcode === code);
+    if (!p) {
+      setScanMsg(`No product with barcode ${code}. Add the barcode in Products.`);
+      return;
+    }
+    if (p.stockQty <= 0) {
+      setScanMsg(`${p.name} is out of stock.`);
+      return;
+    }
+    setQty((q) => ({ ...q, [p.id]: String(Math.min(p.stockQty, Math.round(Number(q[p.id] || "0")) + 1)) }));
+    setScanMsg(`Added ${p.name}`);
+  }
 
   const totalCents = inStock.reduce((sum, p) => {
     const q = Math.round(Number(qty[p.id] || "0"));
@@ -75,6 +92,14 @@ export default function SellProductsButton({
         padding: 12,
       }}
     >
+      {scanning ? (
+        <BarcodeScanner onScan={handleScan} onClose={() => setScanning(false)} />
+      ) : (
+        <button className="btn-ghost" style={{ padding: "6px 12px", fontSize: 12 }} onClick={() => setScanning(true)}>
+          Scan a product
+        </button>
+      )}
+      {scanMsg && <p className="subtle" style={{ margin: 0, fontWeight: 600 }}>{scanMsg}</p>}
       {inStock.map((p) => (
         <div key={p.id} style={{ display: "flex", alignItems: "center", gap: 8 }}>
           <span style={{ flex: 1, fontSize: 13 }}>

@@ -198,11 +198,16 @@ model Service {
   durationMin Int
   priceCents  Int
   tag         String?
+  // Printed on the service's QR label; scanned to add it to a client's bill.
+  barcode     String?
   active      Boolean  @default(true)
 
   bookings    Booking[]
   waitlist    WaitlistEntry[]
   stylistOverrides StylistService[]
+  extras      BookingExtra[]
+
+  @@unique([businessId, barcode])
 }
 
 // Optional per-stylist override of a shared service's price and/or
@@ -312,6 +317,8 @@ model Product {
   priceCents  Int
   stockQty    Int      @default(0)
   // What the salon pays for one unit — lets reports show profit.
+  // Barcode / QR text used by the scanner. Unique within a business.
+  barcode     String?
   costCents   Int      @default(0)
   // Shown as "low stock" at or below this many units.
   lowStockAt  Int      @default(3)
@@ -321,6 +328,8 @@ model Product {
 
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+
+  @@unique([businessId, barcode])
 }
 
 // A rung-up retail sale, always tied to whichever stylist did the
@@ -411,6 +420,7 @@ model Booking {
   giftCardCents Int @default(0)
 
   sale         Sale?
+  extras       BookingExtra[]
 
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
@@ -555,4 +565,19 @@ model Membership {
   createdAt   DateTime @default(now())
 
   @@index([businessId])
+}
+
+// An extra service added to a client's bill after booking (e.g. scanned at
+// the chair). Its price is also added to Booking.priceCents.
+model BookingExtra {
+  id         String   @id @default(cuid())
+  bookingId  String
+  booking    Booking  @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  serviceId  String
+  service    Service  @relation(fields: [serviceId], references: [id])
+  name       String
+  priceCents Int
+  createdAt  DateTime @default(now())
+
+  @@index([bookingId])
 }

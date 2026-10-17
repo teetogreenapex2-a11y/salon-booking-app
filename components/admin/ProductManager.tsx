@@ -1,11 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import BarcodeScanner from "@/components/admin/BarcodeScanner";
 
 type Product = {
   id: string;
   name: string;
+  barcode?: string | null;
   priceCents: number;
   costCents: number;
   lowStockAt: number;
@@ -30,6 +32,15 @@ export default function ProductManager({
   const [stock, setStock] = useState("10");
   const [lowAt, setLowAt] = useState("3");
   const [saving, setSaving] = useState(false);
+  const [barcode, setBarcode] = useState("");
+
+  // Scanner: "stock" adds 1 per scan, "count" tallies a shelf count to apply.
+  const [scanMode, setScanMode] = useState<null | "stock" | "count">(null);
+  const [scanMsg, setScanMsg] = useState("");
+  const [counts, setCounts] = useState<Record<string, number>>({});
+  const productsRef = useRef(products);
+  productsRef.current = products;
+  const formRef = useRef<HTMLFormElement>(null);
 
   // Per-row draft restock amount, keyed by product id.
   const [restockDrafts, setRestockDrafts] = useState<Record<string, string>>({});
@@ -40,6 +51,7 @@ export default function ProductManager({
   const [editPrice, setEditPrice] = useState("");
   const [editCost, setEditCost] = useState("");
   const [editLow, setEditLow] = useState("");
+  const [editCode, setEditCode] = useState("");
 
   async function addProduct(e: React.FormEvent) {
     e.preventDefault();
@@ -55,6 +67,7 @@ export default function ProductManager({
         costCents: Math.round(Number(cost || "0") * 100),
         stockQty: Number(stock) || 0,
         lowStockAt: Number(lowAt) || 0,
+        barcode,
       }),
     });
     setSaving(false);
@@ -70,6 +83,7 @@ export default function ProductManager({
     setCost("");
     setStock("10");
     setLowAt("3");
+    setBarcode("");
     router.refresh();
   }
 
@@ -108,6 +122,7 @@ export default function ProductManager({
     setEditPrice((p.priceCents / 100).toFixed(2));
     setEditCost((p.costCents / 100).toFixed(2));
     setEditLow(String(p.lowStockAt));
+    setEditCode(p.barcode || "");
   }
 
   async function saveEdit(id: string) {
@@ -118,15 +133,63 @@ export default function ProductManager({
         priceCents: Math.round(Number(editPrice) * 100),
         costCents: Math.round(Number(editCost || "0") * 100),
         lowStockAt: Math.round(Number(editLow || "0")),
+        barcode: editCode,
       }),
     });
     if (!res.ok) {
-      alert("Couldn't save — try again.");
+      const data = await res.json().catch(() => ({}));
+      alert(data.error || "Couldn't save — try again.");
       return;
     }
     const updated = await res.json();
     setProducts((list) => list.map((p) => (p.id === id ? { ...p, ...updated } : p)));
     setEditing(null);
+    router.refresh();
+  }
+
+  async function handleScan(code: string) {
+    const p = productsRef.current.find((x) => x.barcode === code);
+    if (!p) {
+      setBarcode(code);
+      setScanMsg(`New barcode ${code} — type its name and price in "Add a product" below.`);
+      formRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+      return;
+    }
+    if (scanMode === "count") {
+      setCounts((c) => ({ ...c, [p.id]: (c[p.id] || 0) + 1 }));
+      setScanMsg(`Counted ${p.name}`);
+      return;
+    }
+    const res = await fetch(`/api/admin/products/${p.id}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ stockQty: p.stockQty + 1 }),
+    });
+    if (!res.ok) {
+      setScanMsg("Couldn't update stock — try again.");
+      return;
+    }
+    const updated = await res.json();
+    setProducts((list) => list.map((x) => (x.id === p.id ? { ...x, stockQty: updated.stockQty } : x)));
+    setScanMsg(`+1 ${p.name} (now ${updated.stockQty})`);
+  }
+
+  async function applyCounts() {
+    const list = Object.entries(counts).map(([productId, qty]) => ({ productId, qty }));
+    if (list.length === 0) return;
+    const res = await fetch("/api/admin/stock/count", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ counts: list }),
+    });
+    if (!res.ok) {
+      alert("Couldn't save the count — try again.");
+      return;
+    }
+    setProducts((l) => l.map((x) => (counts[x.id] !== undefined ? { ...x, stockQty: counts[x.id] } : x)));
+    setCounts({});
+    setScanMode(null);
+    setScanMsg("");
     router.refresh();
   }
 
@@ -138,6 +201,40 @@ export default function ProductManager({
         <p style={{ color: "#b3261e", fontWeight: 600, marginBottom: 12 }}>
           {lowCount} product{lowCount === 1 ? " is" : "s are"} low or out of stock.
         </p>
+      )}
+      <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 12 }}>
+        <button className="btn-primary" style={{ padding: "8px 14px", fontSize: 13 }} onClick={() => { setScanMode("stock"); setScanMsg(""); }}>
+          Scan to add stock
+        </button>
+        <button className="btn-ghost" style={{ padding: "8px 14px", fontSize: 13 }} onClick={() => { setScanMode("count"); setScanMsg(""); setCounts({}); }}>
+          Count shelf
+        </button>
+        <a className="btn-ghost" style={{ padding: "8px 14px", fontSize: 13 }} href="/admin/labels">
+          Print QR labels
+        </a>
+      </div>
+      {scanMode && (
+        <div style={{ marginBottom: 16 }}>
+          <p className="subtle" style={{ margin: "0 0 6px" }}>
+            {scanMode === "stock"
+              ? "Each scan adds 1 to that product's stock."
+              : "Scan every item on the shelf (once per item), then tap Apply to set stock to your count."}
+          </p>
+          <BarcodeScanner onScan={handleScan} onClose={() => { setScanMode(null); setScanMsg(""); }} />
+          {scanMsg && <p style={{ fontWeight: 600, margin: "8px 0 0" }}>{scanMsg}</p>}
+          {scanMode === "count" && Object.keys(counts).length > 0 && (
+            <div style={{ marginTop: 8 }}>
+              {Object.entries(counts).map(([id, n]) => (
+                <p key={id} className="subtle" style={{ margin: "2px 0" }}>
+                  {products.find((x) => x.id === id)?.name}: {n}
+                </p>
+              ))}
+              <button className="btn-primary" style={{ padding: "6px 12px", fontSize: 12, marginTop: 6 }} onClick={applyCounts}>
+                Apply counts
+              </button>
+            </div>
+          )}
+        </div>
       )}
       <div className="list" style={{ marginBottom: 28 }}>
         {products.map((p) => {
@@ -180,6 +277,8 @@ export default function ProductManager({
                   <input type="number" step="0.01" value={editPrice} onChange={(e) => setEditPrice(e.target.value)} style={{ width: 80 }} />
                   <label className="subtle" style={{ fontSize: 12 }}>You pay $</label>
                   <input type="number" step="0.01" value={editCost} onChange={(e) => setEditCost(e.target.value)} style={{ width: 80 }} />
+                  <label className="subtle" style={{ fontSize: 12 }}>Barcode</label>
+                  <input value={editCode} onChange={(e) => setEditCode(e.target.value)} style={{ width: 140 }} placeholder="scan or type" />
                   <label className="subtle" style={{ fontSize: 12 }}>Warn at</label>
                   <input type="number" value={editLow} onChange={(e) => setEditLow(e.target.value)} style={{ width: 60 }} />
                   <button className="btn-primary" style={{ padding: "6px 12px", fontSize: 12 }} onClick={() => saveEdit(p.id)}>
@@ -229,6 +328,7 @@ export default function ProductManager({
         Add a product
       </h2>
       <form
+        ref={formRef}
         onSubmit={addProduct}
         className="customer-form"
         style={{ marginTop: 0, paddingTop: 0, borderTop: "none", maxWidth: 360 }}
@@ -247,6 +347,9 @@ export default function ProductManager({
 
         <label className="subtle" style={{ fontSize: 12, marginTop: 8 }}>Warn me when stock is this low</label>
         <input placeholder="3" type="number" value={lowAt} onChange={(e) => setLowAt(e.target.value)} />
+
+        <label className="subtle" style={{ fontSize: 12, marginTop: 8 }}>Barcode (optional — scan it with "Scan to add stock", or leave blank)</label>
+        <input placeholder="Scan or type" value={barcode} onChange={(e) => setBarcode(e.target.value)} />
 
         <button className="btn-primary" type="submit" disabled={saving}>
           {saving ? "Adding…" : "Add product"}
