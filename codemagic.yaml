@@ -10,9 +10,6 @@ workflows:
       # Team settings (same key BookMyPro uses - "codemagic").
       app_store_connect: codemagic
     environment:
-      ios_signing:
-        distribution_type: app_store
-        bundle_identifier: com.hairsalonix.app   # create this App ID in Apple Developer first
       vars:
         XCODE_PROJECT: "ios/App/App.xcodeproj"
         XCODE_SCHEME: "App"
@@ -64,6 +61,13 @@ workflows:
           cd ios/App
           agvtool new-version -all $BUILD_NUMBER
           cd ../..
+      - name: Create/fetch signing certificate and profile automatically
+        script: |
+          keychain initialize
+          app-store-connect fetch-signing-files "com.hairsalonix.app" \
+            --type IOS_APP_STORE \
+            --create
+          keychain add-certificates
       - name: Set up code signing settings on Xcode project
         script: |
           xcode-project use-profiles
