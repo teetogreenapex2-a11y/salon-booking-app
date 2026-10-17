@@ -35,7 +35,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
           Salon Admin
         </span>
         {isOwner ? (
-          <AdminNav />
+          <AdminNav tabsJson={business?.navTabs ?? null} />
         ) : (
           <StylistNav
             stylistId={stylist?.id ?? ""}

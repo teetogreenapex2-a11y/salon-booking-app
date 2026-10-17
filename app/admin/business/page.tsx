@@ -3,6 +3,8 @@ import { getCurrentOwnerContext } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import CoOwnerManager from "@/components/admin/CoOwnerManager";
 import BusinessForm from "@/components/admin/BusinessForm";
+import NavTabsEditor from "@/components/admin/NavTabsEditor";
+import { parseTabs } from "@/lib/navTabs";
 
 export const dynamic = "force-dynamic";
 
@@ -21,6 +23,8 @@ export default async function BusinessSettingsPage() {
         Business settings
       </h1>
       <BusinessForm business={business} />
+
+      <NavTabsEditor initialTabs={parseTabs(business.navTabs)} />
 
       <CoOwnerManager
         ownerEmail={owner?.email ?? ""}

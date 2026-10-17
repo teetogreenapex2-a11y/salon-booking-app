@@ -572,3 +572,101 @@ body {
   background: var(--panel); box-shadow: var(--shadow-sm);
 }
 .empty-state .stat-icon { margin: 0 auto 10px; width: 48px; height: 48px; border-radius: 16px; }
+
+/* "More" sheet for the phone bottom bar */
+.admin-sheet-wrap {
+  display: none;
+}
+.admin-nav-bottom button.tab {
+  background: none;
+  border: 0;
+  font: inherit;
+  cursor: pointer;
+}
+@media (max-width: 640px) {
+  .admin-sheet-wrap {
+    display: block;
+    position: fixed;
+    inset: 0;
+    z-index: 60;
+  }
+  .admin-sheet-backdrop {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    border: 0;
+    background: rgba(36, 28, 31, 0.45);
+    padding: 0;
+  }
+  .admin-sheet {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: #fff;
+    border-radius: 20px 20px 0 0;
+    padding: 14px 16px calc(20px + env(safe-area-inset-bottom));
+    max-height: 75vh;
+    overflow-y: auto;
+    box-shadow: 0 -8px 30px rgba(36, 28, 31, 0.2);
+    animation: admin-sheet-up 0.18s ease-out;
+  }
+  .admin-sheet-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 12px;
+  }
+  .admin-sheet-close {
+    width: 44px;
+    height: 44px;
+    border: 0;
+    background: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--ink);
+  }
+  .admin-sheet-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 10px;
+  }
+  .admin-sheet-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    padding: 14px 4px;
+    min-height: 44px;
+    border-radius: 14px;
+    background: rgba(36, 28, 31, 0.04);
+    color: var(--ink);
+    text-decoration: none;
+    font-size: 13px;
+    text-align: center;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .admin-sheet-item.active {
+    background: var(--accent, #7f2d4a);
+    color: #fff;
+  }
+  .admin-sheet-icon {
+    display: flex;
+  }
+}
+@keyframes admin-sheet-up {
+  from {
+    transform: translateY(24px);
+    opacity: 0;
+  }
+  to {
+    transform: none;
+    opacity: 1;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .admin-sheet {
+    animation: none;
+  }
+}

@@ -1,68 +1,92 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, CalendarDays, ClipboardList, Users, Scissors } from "lucide-react";
+import {
+  LayoutDashboard,
+  CalendarDays,
+  ClipboardList,
+  Users,
+  Scissors,
+  Hourglass,
+  Mail,
+  Gift,
+  Repeat,
+  Sparkles,
+  ShoppingBag,
+  Clock,
+  BarChart3,
+  Image as ImageIcon,
+  Settings,
+  Ellipsis,
+  X,
+  type LucideIcon,
+} from "lucide-react";
+import { NAV_CATALOG, parseTabs } from "@/lib/navTabs";
 
-// The 5 most-used pages — these become the fixed bottom tab bar on phones.
-const PRIMARY_LINKS = [
-  { href: "/admin", label: "Dashboard", Icon: LayoutDashboard },
-  { href: "/admin/calendar", label: "Calendar", Icon: CalendarDays },
-  { href: "/admin/bookings", label: "Bookings", Icon: ClipboardList },
-  { href: "/admin/customers", label: "Customers", Icon: Users },
-  { href: "/admin/stylists", label: "Stylists", Icon: Scissors },
-];
-
-// Less-frequent pages — shown as a horizontal pill row up top on phones.
-const SECONDARY_LINKS = [
-  { href: "/admin/waitlist", label: "Waitlist" },
-  { href: "/admin/marketing", label: "Email" },
-  { href: "/admin/gift-cards", label: "Gift cards" },
-  { href: "/admin/memberships", label: "Memberships" },
-  { href: "/admin/services", label: "Services" },
-  { href: "/admin/products", label: "Products" },
-  { href: "/admin/availability", label: "Hours" },
-  { href: "/admin/business", label: "Business" },
-  { href: "/admin/reports", label: "Reports" },
-  { href: "/admin/gallery", label: "Gallery" },
-];
-
-const ALL_LINKS: { href: string; label: string }[] = [...PRIMARY_LINKS, ...SECONDARY_LINKS];
+const ICONS: Record<string, LucideIcon> = {
+  dashboard: LayoutDashboard,
+  calendar: CalendarDays,
+  bookings: ClipboardList,
+  customers: Users,
+  stylists: Scissors,
+  waitlist: Hourglass,
+  marketing: Mail,
+  "gift-cards": Gift,
+  memberships: Repeat,
+  services: Sparkles,
+  products: ShoppingBag,
+  availability: Clock,
+  reports: BarChart3,
+  gallery: ImageIcon,
+  business: Settings,
+};
 
 function isActive(pathname: string | null, href: string) {
   return href === "/admin" ? pathname === "/admin" : pathname?.startsWith(href);
 }
 
-export default function AdminNav() {
+export default function AdminNav({ tabsJson }: { tabsJson?: string | null }) {
   const pathname = usePathname();
+  const [moreOpen, setMoreOpen] = useState(false);
+
+  const chosenKeys = parseTabs(tabsJson);
+  const chosen = chosenKeys.map((k) => NAV_CATALOG.find((c) => c.key === k)!).filter(Boolean);
+  const rest = NAV_CATALOG.filter((c) => !chosenKeys.includes(c.key));
+  const moreActive = rest.some((c) => isActive(pathname, c.href));
+
+  // Close the sheet after navigating, and on Escape.
+  useEffect(() => {
+    setMoreOpen(false);
+  }, [pathname]);
+  useEffect(() => {
+    if (!moreOpen) return;
+    const onKey = (e: KeyboardEvent) => e.key === "Escape" && setMoreOpen(false);
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [moreOpen]);
 
   return (
     <>
       {/* Full nav — visible on desktop, hidden on phones */}
       <nav className="admin-nav-links admin-nav-full">
-        {ALL_LINKS.map((link) => (
+        {NAV_CATALOG.map((link) => (
           <Link key={link.href} href={link.href} className={isActive(pathname, link.href) ? "active" : ""}>
             {link.label}
           </Link>
         ))}
       </nav>
 
-      {/* Secondary pills — hidden on desktop, horizontal row up top on phones */}
-      <nav className="admin-nav-secondary">
-        {SECONDARY_LINKS.map((link) => (
-          <Link key={link.href} href={link.href} className={isActive(pathname, link.href) ? "active" : ""}>
-            {link.label}
-          </Link>
-        ))}
-      </nav>
-
-      {/* Bottom tab bar — hidden on desktop, fixed to bottom on phones */}
+      {/* Bottom tab bar — hidden on desktop, fixed to bottom on phones.
+          The owner picks up to 4 tabs; the 5th is always More. */}
       <nav className="admin-nav-bottom">
-        {PRIMARY_LINKS.map(({ href, label, Icon }) => {
+        {chosen.map(({ key, href, label }) => {
+          const Icon = ICONS[key];
           const active = isActive(pathname, href);
           return (
             <Link
-              key={href}
+              key={key}
               href={href}
               className={`tab ${active ? "active" : ""}`}
               aria-current={active ? "page" : undefined}
@@ -74,7 +98,49 @@ export default function AdminNav() {
             </Link>
           );
         })}
+        {rest.length > 0 && (
+          <button
+            type="button"
+            className={`tab tab-more ${moreActive || moreOpen ? "active" : ""}`}
+            aria-haspopup="dialog"
+            aria-expanded={moreOpen}
+            onClick={() => setMoreOpen((o) => !o)}
+          >
+            <span className="tab-icon">
+              <Ellipsis size={22} strokeWidth={moreActive ? 2.3 : 1.8} aria-hidden />
+            </span>
+            <span className="tab-label">More</span>
+          </button>
+        )}
       </nav>
+
+      {moreOpen && (
+        <div className="admin-sheet-wrap">
+          <button type="button" className="admin-sheet-backdrop" aria-label="Close menu" onClick={() => setMoreOpen(false)} />
+          <div className="admin-sheet" role="dialog" aria-modal="true" aria-label="More pages">
+            <div className="admin-sheet-head">
+              <span className="display" style={{ fontSize: 18 }}>More</span>
+              <button type="button" className="admin-sheet-close" aria-label="Close" onClick={() => setMoreOpen(false)}>
+                <X size={20} aria-hidden />
+              </button>
+            </div>
+            <div className="admin-sheet-grid">
+              {rest.map(({ key, href, label }) => {
+                const Icon = ICONS[key];
+                const active = isActive(pathname, href);
+                return (
+                  <Link key={key} href={href} className={`admin-sheet-item ${active ? "active" : ""}`}>
+                    <span className="admin-sheet-icon">
+                      <Icon size={24} strokeWidth={1.8} aria-hidden />
+                    </span>
+                    <span>{label}</span>
+                  </Link>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 }
