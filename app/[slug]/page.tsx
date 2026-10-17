@@ -28,7 +28,7 @@ export default async function BusinessPage({ params }: { params: { slug: string 
     where: { slug: params.slug },
     include: { stylists: { where: { active: true } } },
   });
- if (!business) notFound();
+ if (!business || business.approvalStatus !== "APPROVED") notFound();
 
   const jsonLd = {
     "@context": "https://schema.org",

@@ -17,7 +17,7 @@ export async function POST(req: NextRequest) {
   }
 
   const business = await prisma.business.findUnique({ where: { slug: businessSlug } });
-  if (!business) {
+  if (!business || business.approvalStatus !== "APPROVED") {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
 

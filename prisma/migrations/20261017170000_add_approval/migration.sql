@@ -1,0 +1,2 @@
+ALTER TABLE "Business" ADD COLUMN "approvalStatus" TEXT NOT NULL DEFAULT 'APPROVED';
+ALTER TABLE "Business" ADD COLUMN "approvedAt" TIMESTAMP(3);

@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { sendEmail } from "@/lib/email";
+import { platformAdminEmails } from "@/lib/platform";
 
 export async function POST(req: NextRequest) {
   const session = await getServerSession(authOptions);
@@ -53,6 +55,9 @@ export async function POST(req: NextRequest) {
       slug: cleanSlug,
       address: address || null,
       ownerId: user.id,
+      // Needs the platform owner's OK before it can be used or booked.
+      approvalStatus: "PENDING",
+      listed: false,
       // 14-day free trial starting now, so a new signup can use the app
       // immediately without hitting a paywall — the admin layout only
       // nudges toward /admin/billing once this passes with no subscription.
@@ -70,6 +75,21 @@ export async function POST(req: NextRequest) {
         name: yourName || name,
       },
     });
+  }
+
+  // Tell the platform owner there is someone waiting for approval.
+  try {
+    const admins = platformAdminEmails();
+    if (admins[0]) {
+      await sendEmail(
+        admins[0],
+        `New Hairsalonix signup waiting for approval: ${name}`,
+        `<p><strong>${String(name).replace(/</g, "&lt;")}</strong> (${user.email}) just signed up.</p>` +
+          `<p><a href="https://www.hairsalonix.com/platform">Review and approve</a></p>`
+      );
+    }
+  } catch (e) {
+    console.error("[onboarding] approval email failed", e);
   }
 
   return NextResponse.json(business);

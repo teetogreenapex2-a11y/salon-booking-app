@@ -20,6 +20,26 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   // no billing page to go to and no reason to see this.
   const showBillingBanner = isOwner && activeBusiness && !subActive && !trialActive;
 
+  if (activeBusiness && activeBusiness.approvalStatus !== "APPROVED") {
+    const rejected = activeBusiness.approvalStatus === "REJECTED";
+    return (
+      <div>
+        <div className="admin-nav" style={{ justifyContent: "flex-end" }}>
+          <AdminLogoutButton />
+        </div>
+        <main className="page" style={{ maxWidth: 520, textAlign: "center" }}>
+          <h1 className="display title">{rejected ? "Account not approved" : "Thanks for signing up!"}</h1>
+          <p className="tagline">
+            {rejected
+              ? "We weren't able to approve this account. Please contact us if you think this is a mistake."
+              : "Your salon is waiting for approval. We review every new account and will email you as soon as you're in — usually within a day."}
+          </p>
+          <p className="subtle">Questions? Email teetogreenapex2@gmail.com</p>
+        </main>
+      </div>
+    );
+  }
+
   return (
     <div>
       <div className="admin-nav">

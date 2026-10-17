@@ -14,6 +14,7 @@ export default async function FindASalon({ searchParams }: { searchParams?: { q?
   const businesses = await prisma.business.findMany({
     where: {
       listed: true,
+      approvalStatus: "APPROVED",
       ...(q
         ? {
             OR: [

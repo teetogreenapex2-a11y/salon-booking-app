@@ -73,6 +73,10 @@ model Business {
   coverUrl     String?
   // JSON array of nav keys shown in the phone bottom bar (max 4; the rest go under More).
   navTabs      String?
+  // Signup approval: new salons start PENDING until the platform owner
+  // approves them at /platform. Existing salons are APPROVED by default.
+  approvalStatus String   @default("APPROVED")
+  approvedAt     DateTime?
   // Whether the salon appears on the public "Find a salon" page and in
   // search engines' sitemap. Its own booking link always works.
   listed       Boolean  @default(true)

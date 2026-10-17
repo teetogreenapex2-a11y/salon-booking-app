@@ -8,7 +8,7 @@ export const dynamic = "force-dynamic";
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const base = "https://hairsalonix.com";
   const salons = await prisma.business.findMany({
-    where: { listed: true },
+    where: { listed: true, approvalStatus: "APPROVED" },
     select: { slug: true, updatedAt: true },
   });
   return [
