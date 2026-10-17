@@ -34,7 +34,8 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
   }
 
   let accountId: string | null = null;
-  let cardRow: Awaited<ReturnType<typeof prisma.customerCard.findUnique>> = null;
+  let cardCustomerId: string | null = null;
+  let cardMethodId: string | null = null;
   if (!offlineMethod) {
     accountId = resolvePayoutAccountId(booking.stylist, business);
     if (!accountId) {
@@ -43,12 +44,14 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
     if (!booking.customerId) {
       return NextResponse.json({ error: "No card on file for this customer" }, { status: 400 });
     }
-    cardRow = await prisma.customerCard.findUnique({
+    const cardRow = await prisma.customerCard.findUnique({
       where: { customerId_connectedAccountId: { customerId: booking.customerId, connectedAccountId: accountId } },
     });
     if (!cardRow?.stripePaymentMethodId) {
       return NextResponse.json({ error: "No card on file for this customer" }, { status: 400 });
     }
+    cardCustomerId = cardRow.stripeCustomerId;
+    cardMethodId = cardRow.stripePaymentMethodId;
   }
 
   const productIds = items.map((i: { productId: string }) => i.productId);
@@ -81,13 +84,13 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
   const commissionCents = Math.round((totalCents * booking.stylist.retailCommissionPct) / 100);
 
   let paymentIntentId: string | null = null;
-  if (!offlineMethod && cardRow && accountId) try {
+  if (!offlineMethod && cardMethodId && accountId) try {
     const paymentIntent = await stripe.paymentIntents.create(
       {
         amount: totalCents,
         currency: "usd",
-        customer: cardRow.stripeCustomerId,
-        payment_method: cardRow.stripePaymentMethodId,
+        customer: cardCustomerId ?? undefined,
+        payment_method: cardMethodId,
         off_session: true,
         confirm: true,
         description: `Product sale — ${booking.customerName}`,
