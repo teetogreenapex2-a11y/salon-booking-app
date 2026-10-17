@@ -1,0 +1,88 @@
+# Push notifications (Firebase + aps-environment entitlement) are left out of
+# v1 and get added when the server side of push exists.
+workflows:
+  ios-workflow:
+    name: Hairsalonix iOS
+    max_build_duration: 60
+    instance_type: mac_mini_m2
+    integrations:
+      # Must match the name of the App Store Connect API key in Codemagic's
+      # Team settings (same key BookMyPro uses - "codemagic").
+      app_store_connect: codemagic
+    environment:
+      ios_signing:
+        distribution_type: app_store
+        bundle_identifier: com.hairsalonix.app   # create this App ID in Apple Developer first
+      vars:
+        XCODE_PROJECT: "ios/App/App.xcodeproj"
+        XCODE_SCHEME: "App"
+      node: latest
+    scripts:
+      - name: Install npm dependencies
+        script: |
+          npm install
+      # The app loads the live site (server.url in capacitor.config.ts =
+      # https://www.hairsalonix.com), so there is no web build step.
+      - name: Add iOS platform
+        script: |
+          rm -rf ios
+          npx cap add ios
+      - name: Add privacy purpose strings to Info.plist
+        script: |
+          # Apple rejects builds that reference camera / photos without a
+          # reason string. Hairsalonix uses the camera for barcode and QR
+          # scanning and the photo library for gallery and logo uploads.
+          PLIST="ios/App/App/Info.plist"
+          /usr/libexec/PlistBuddy -c "Add :ITSAppUsesNonExemptEncryption bool false" "$PLIST" || true
+          /usr/libexec/PlistBuddy -c "Add :NSCameraUsageDescription string 'Hairsalonix uses your camera to scan product barcodes and service QR codes, and to take photos for your gallery.'" "$PLIST" || true
+          /usr/libexec/PlistBuddy -c "Add :NSPhotoLibraryUsageDescription string 'Hairsalonix lets you choose photos from your library for your salon gallery and logo.'" "$PLIST" || true
+          /usr/libexec/PlistBuddy -c "Add :NSPhotoLibraryAddUsageDescription string 'Hairsalonix can save photos to your library.'" "$PLIST" || true
+      - name: Generate iOS app icon
+        script: |
+          npx @capacitor/assets generate --ios
+      - name: Add native tab bar
+        script: |
+          # Same approach as BookMyPro: copy in the Swift file, register it
+          # with the Xcode project, and point SceneDelegate at it.
+          cp ios-config/MainViewController.swift ios/App/App/MainViewController.swift
+          ruby -e '
+            require "xcodeproj"
+            project = Xcodeproj::Project.open("ios/App/App.xcodeproj")
+            target = project.targets.first
+            group = project.main_group.find_subpath("App", true)
+            file_ref = group.new_reference("MainViewController.swift")
+            target.source_build_phase.add_file_reference(file_ref)
+            project.save
+          '
+          sed -i '' 's/customClass="CAPBridgeViewController"/customClass="MainViewController"/; s/customModule="Capacitor"/customModule="App"/' ios/App/App/Base.lproj/Main.storyboard
+          sed -i '' 's/CAPBridgeViewController()/MainViewController()/' ios/App/App/SceneDelegate.swift
+      - name: Sync Capacitor
+        script: |
+          npx cap sync ios
+      - name: Set build number
+        script: |
+          cd ios/App
+          agvtool new-version -all $BUILD_NUMBER
+          cd ../..
+      - name: Set up code signing settings on Xcode project
+        script: |
+          xcode-project use-profiles
+      - name: Build ipa for distribution
+        script: |
+          xcode-project build-ipa \
+            --project "$XCODE_PROJECT" \
+            --scheme "$XCODE_SCHEME"
+    artifacts:
+      - "**/*.ipa"
+      - /tmp/xcodebuild_logs/*.log
+    publishing:
+      email:
+        recipients:
+          - teetogreenapex2@gmail.com
+        notify:
+          success: true
+          failure: true
+      app_store_connect:
+        auth: integration
+        submit_to_testflight: true
+        submit_to_app_store: false
