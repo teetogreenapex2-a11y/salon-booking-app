@@ -1,5 +1,7 @@
 export const dynamic = "force-dynamic";
-import { notFound } from "next/navigation";
+import { redirect } from "next/navigation";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { getPlatformAdminEmail } from "@/lib/platform";
 import ApprovalButtons from "@/components/platform/ApprovalButtons";
@@ -7,7 +9,19 @@ import ApprovalButtons from "@/components/platform/ApprovalButtons";
 export const metadata = { title: "Signups — Hairsalonix", robots: { index: false, follow: false } };
 
 export default async function PlatformPage() {
-  if (!(await getPlatformAdminEmail())) notFound();
+  const session = await getServerSession(authOptions);
+  if (!session?.user?.email) redirect("/login");
+  if (!(await getPlatformAdminEmail())) {
+    return (
+      <main className="page" style={{ maxWidth: 520 }}>
+        <h1 className="display title">Not on the admin list</h1>
+        <p className="tagline">
+          You are signed in as {session.user.email}. Sign in with teetogreenapex2@gmail.com or
+          rcstitz52@gmail.com, or set PLATFORM_ADMIN_EMAILS in Vercel.
+        </p>
+      </main>
+    );
+  }
 
   const businesses = await prisma.business.findMany({
     orderBy: { createdAt: "desc" },
