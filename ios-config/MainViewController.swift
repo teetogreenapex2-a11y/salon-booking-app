@@ -36,6 +36,7 @@ class MainViewController: CAPBridgeViewController, UITabBarDelegate, WKScriptMes
     override func capacitorDidLoad() {
         guard let webView = self.bridge?.webView else { return }
 
+        webView.scrollView.contentInsetAdjustmentBehavior = .never
         webView.scrollView.bounces = false
         webView.scrollView.alwaysBounceVertical = false
 

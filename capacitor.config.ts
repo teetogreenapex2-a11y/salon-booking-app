@@ -15,7 +15,7 @@ const config: CapacitorConfig = {
   },
 
   ios: {
-    contentInset: 'automatic',
+    contentInset: 'never',
   },
 
   // The website hides the splash itself once the page has loaded

@@ -670,3 +670,26 @@ body {
     animation: none;
   }
 }
+
+/* Inside the app shell, once the native tab bar has taken over: hide the web
+   one, and keep the More sheet clear of the native bar. */
+.native-nav .admin-nav-bottom {
+  display: none !important;
+}
+.native-nav .admin-sheet {
+  padding-bottom: calc(96px + env(safe-area-inset-bottom));
+}
+
+/* --- Inside the iOS app: respect the status bar / notch and keep the header pinned --- */
+html.native-app .admin-nav {
+  position: sticky;
+  top: 0;
+  z-index: 40;
+  padding-top: calc(12px + env(safe-area-inset-top));
+}
+html.native-app .page {
+  padding-top: calc(40px + env(safe-area-inset-top));
+}
+html.native-app .admin-page {
+  padding-top: 16px;
+}
