@@ -18,9 +18,11 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
   }
 
   const body = await req.json();
-  const data: { name?: string; priceCents?: number; stockQty?: number; active?: boolean } = {};
+  const data: { name?: string; priceCents?: number; costCents?: number; lowStockAt?: number; stockQty?: number; active?: boolean } = {};
   if (typeof body.name === "string") data.name = body.name;
   if (typeof body.priceCents === "number") data.priceCents = Math.round(body.priceCents);
+  if (typeof body.costCents === "number" && body.costCents >= 0) data.costCents = Math.round(body.costCents);
+  if (typeof body.lowStockAt === "number" && body.lowStockAt >= 0) data.lowStockAt = Math.round(body.lowStockAt);
   if (typeof body.stockQty === "number") data.stockQty = Math.round(body.stockQty);
   if (typeof body.active === "boolean") data.active = body.active;
 

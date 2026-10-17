@@ -18,7 +18,7 @@ export default async function ProductsPage() {
         Products
       </h1>
       <p className="subtle" style={{ marginBottom: 20 }}>
-        Retail products your stylists can sell at checkout.
+        Retail products your stylists can sell at checkout. Enter what you pay for each one to see profit in Reports.
       </p>
       <ProductManager businessId={business.id} initialProducts={products} />
     </div>

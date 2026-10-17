@@ -17,6 +17,8 @@ export default function SellProductsButton({
   const [qty, setQty] = useState<Record<string, string>>({});
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
+  // "Card" charges the card on file; anything else records a payment taken outside the app.
+  const [method, setMethod] = useState<string>("Card");
 
   const inStock = products.filter((p) => p.stockQty > 0);
 
@@ -36,7 +38,7 @@ export default function SellProductsButton({
     const res = await fetch(`/api/admin/bookings/${bookingId}/sell`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ items }),
+      body: JSON.stringify({ items, method }),
     });
     setSubmitting(false);
     if (res.ok) {
@@ -92,6 +94,16 @@ export default function SellProductsButton({
       <p className="name" style={{ margin: "4px 0 0" }}>
         Total: ${(totalCents / 100).toFixed(2)}
       </p>
+      <label className="subtle" style={{ fontSize: 12 }}>
+        How are they paying?
+      </label>
+      <select value={method} onChange={(e) => setMethod(e.target.value)}>
+        <option value="Card">Charge card on file</option>
+        <option value="Venmo">Paid with Venmo</option>
+        <option value="Cash App">Paid with Cash App</option>
+        <option value="Zelle">Paid with Zelle</option>
+        <option value="Cash">Paid with cash</option>
+      </select>
       {error && (
         <p className="subtle" style={{ color: "#b00020", margin: 0 }}>
           {error}
@@ -104,7 +116,7 @@ export default function SellProductsButton({
           onClick={submit}
           disabled={submitting || totalCents === 0}
         >
-          {submitting ? "Charging…" : `Charge $${(totalCents / 100).toFixed(2)}`}
+          {submitting ? "Saving…" : method === "Card" ? `Charge $${(totalCents / 100).toFixed(2)}` : `Record $${(totalCents / 100).toFixed(2)} sale`}
         </button>
         <button
           className="btn-ghost"

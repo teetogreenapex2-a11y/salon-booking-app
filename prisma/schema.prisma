@@ -311,6 +311,10 @@ model Product {
   name        String
   priceCents  Int
   stockQty    Int      @default(0)
+  // What the salon pays for one unit — lets reports show profit.
+  costCents   Int      @default(0)
+  // Shown as "low stock" at or below this many units.
+  lowStockAt  Int      @default(3)
   active      Boolean  @default(true)
 
   saleItems   SaleItem[]
@@ -345,6 +349,8 @@ model Sale {
 
   stripePaymentIntentId String?
   chargedAt             DateTime?
+  // How it was paid when not charged to a card on file (Venmo, Cash App, Zelle, Cash).
+  paidMethod            String?
 
   items       SaleItem[]
 
@@ -359,6 +365,8 @@ model SaleItem {
   product        Product @relation(fields: [productId], references: [id])
   quantity       Int
   priceCentsEach Int
+  // Cost per unit at the time of sale, so later cost changes don't rewrite history.
+  costCentsEach  Int     @default(0)
 }
 
 model Booking {

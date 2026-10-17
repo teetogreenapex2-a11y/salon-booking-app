@@ -50,6 +50,73 @@ async function statsForRange(businessId: string, start: Date, end: Date, stylist
   return [...stats.values()].sort((a, b) => b.revenueCents - a.revenueCents);
 }
 
+type RetailRow = { name: string; units: number; revenueCents: number; costCents: number };
+
+// Product sales in a date range: units, revenue, cost of goods and profit.
+// Cost comes from the snapshot saved on each sale (older sales before costs
+// were entered count as $0 cost).
+async function retailForRange(businessId: string, start: Date, end: Date) {
+  const items = await prisma.saleItem.findMany({
+    where: { sale: { businessId, createdAt: { gte: start, lt: end } } },
+    include: { product: true },
+  });
+  const map = new Map<string, RetailRow>();
+  for (const it of items) {
+    const row = map.get(it.productId) ?? { name: it.product.name, units: 0, revenueCents: 0, costCents: 0 };
+    row.units += it.quantity;
+    row.revenueCents += it.quantity * it.priceCentsEach;
+    row.costCents += it.quantity * it.costCentsEach;
+    map.set(it.productId, row);
+  }
+  return [...map.values()].sort((a, b) => b.revenueCents - a.revenueCents);
+}
+
+function RetailTable({ rows }: { rows: RetailRow[] }) {
+  if (rows.length === 0) return <p className="subtle">No product sales in this period.</p>;
+  const revenue = rows.reduce((n, r) => n + r.revenueCents, 0);
+  const cost = rows.reduce((n, r) => n + r.costCents, 0);
+  return (
+    <>
+      <div className="stat-row" style={{ marginBottom: 16 }}>
+        <div className="stat-card">
+          <span className="stat-number">${(revenue / 100).toFixed(0)}</span>
+          <span className="subtle">Product sales</span>
+        </div>
+        <div className="stat-card">
+          <span className="stat-number">${(cost / 100).toFixed(0)}</span>
+          <span className="subtle">Cost of products</span>
+        </div>
+        <div className="stat-card">
+          <span className="stat-number">${((revenue - cost) / 100).toFixed(0)}</span>
+          <span className="subtle">Profit</span>
+        </div>
+      </div>
+      <table className="admin-table">
+        <thead>
+          <tr>
+            <th>Product</th>
+            <th>Sold</th>
+            <th>Sales</th>
+            <th>Cost</th>
+            <th>Profit</th>
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map((r) => (
+            <tr key={r.name}>
+              <td>{r.name}</td>
+              <td>{r.units}</td>
+              <td>${(r.revenueCents / 100).toFixed(2)}</td>
+              <td>${(r.costCents / 100).toFixed(2)}</td>
+              <td>${((r.revenueCents - r.costCents) / 100).toFixed(2)}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </>
+  );
+}
+
 function StatsTable({ rows }: { rows: StylistRow[] }) {
   const totalRevenue = rows.reduce((sum, r) => sum + r.revenueCents, 0);
   const totalBookings = rows.reduce((sum, r) => sum + r.completed, 0);
@@ -142,6 +209,18 @@ export default async function AdminReports({
     statsForRange(business.id, monthStart, monthEnd, stylists),
   ]);
 
+  const isOwner = access.role !== "stylist";
+  const [retailMtd, retailMonth, lowStock, stockValueItems] = isOwner
+    ? await Promise.all([
+        retailForRange(business.id, mtdStart, mtdEnd),
+        retailForRange(business.id, monthStart, monthEnd),
+        prisma.product.findMany({ where: { businessId: business.id, active: true }, orderBy: { name: "asc" } }),
+        prisma.product.findMany({ where: { businessId: business.id }, select: { stockQty: true, costCents: true } }),
+      ])
+    : [[], [], [], []];
+  const lowList = (lowStock as any[]).filter((p) => p.stockQty <= p.lowStockAt);
+  const inventoryCost = (stockValueItems as any[]).reduce((n, p) => n + p.stockQty * p.costCents, 0);
+
   return (
     <div>
       <h1 className="display" style={{ fontSize: 26, marginBottom: 4 }}>
@@ -186,6 +265,49 @@ export default async function AdminReports({
         </Link>
       </div>
       <StatsTable rows={browsedMonthRows} />
+
+      {isOwner && (
+        <>
+          <h2 className="display" style={{ fontSize: 18, margin: "40px 0 2px" }}>
+            Retail products: this month
+          </h2>
+          <p className="subtle" style={{ marginBottom: 14 }}>
+            Sales, cost and profit from products sold at checkout
+          </p>
+          <div style={{ marginBottom: 36 }}>
+            <RetailTable rows={retailMtd as RetailRow[]} />
+          </div>
+
+          <h2 className="display" style={{ fontSize: 18, marginBottom: 2 }}>
+            Retail products: {monthStart.toLocaleDateString(undefined, { month: "long", year: "numeric" })}
+          </h2>
+          <div style={{ margin: "14px 0 36px" }}>
+            <RetailTable rows={retailMonth as RetailRow[]} />
+          </div>
+
+          <h2 className="display" style={{ fontSize: 18, marginBottom: 10 }}>
+            Inventory
+          </h2>
+          <p className="subtle" style={{ marginBottom: 10 }}>
+            Value of stock on hand at your cost: <strong>${(inventoryCost / 100).toFixed(2)}</strong>
+          </p>
+          {lowList.length === 0 ? (
+            <p className="subtle">Nothing is running low.</p>
+          ) : (
+            <div>
+              <p style={{ color: "#b3261e", fontWeight: 600, marginBottom: 6 }}>Running low:</p>
+              {lowList.map((p: any) => (
+                <p key={p.id} style={{ margin: "2px 0" }}>
+                  {p.name} — {p.stockQty === 0 ? "out of stock" : `${p.stockQty} left`}
+                </p>
+              ))}
+              <Link href="/admin/products" className="btn-ghost" style={{ display: "inline-block", marginTop: 10, textDecoration: "none" }}>
+                Restock on the Products page
+              </Link>
+            </div>
+          )}
+        </>
+      )}
     </div>
   );
 }

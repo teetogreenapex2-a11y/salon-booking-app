@@ -114,7 +114,7 @@ export default async function BookingsPage() {
                     {b.status !== "CANCELLED" && b.status !== "NO_SHOW" && (
                       <CollectPaymentButton
                         bookingId={b.id}
-                        totalCents={b.priceCents + (b.sale?.totalCents ?? 0)}
+                        totalCents={b.priceCents}
                         note={`${b.service.name} with ${b.stylist.name}`}
                         venmoHandle={b.stylist.venmoHandle}
                         cashAppHandle={b.stylist.cashAppHandle}

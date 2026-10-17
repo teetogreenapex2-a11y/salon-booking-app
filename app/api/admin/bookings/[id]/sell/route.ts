@@ -26,23 +26,29 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
     return NextResponse.json({ error: "Products were already rung up for this booking" }, { status: 400 });
   }
 
-  const accountId = resolvePayoutAccountId(booking.stylist, business);
-  if (!accountId) {
-    return NextResponse.json({ error: "Connect Stripe first in Billing" }, { status: 400 });
-  }
-  if (!booking.customerId) {
-    return NextResponse.json({ error: "No card on file for this customer" }, { status: 400 });
-  }
-  const cardRow = await prisma.customerCard.findUnique({
-    where: { customerId_connectedAccountId: { customerId: booking.customerId, connectedAccountId: accountId } },
-  });
-  if (!cardRow?.stripePaymentMethodId) {
-    return NextResponse.json({ error: "No card on file for this customer" }, { status: 400 });
-  }
-
-  const { items } = await req.json();
+  const { items, method } = await req.json();
+  const OFFLINE = ["Venmo", "Cash App", "Zelle", "Cash"];
+  const offlineMethod: string | null = OFFLINE.includes(method) ? method : null;
   if (!Array.isArray(items) || items.length === 0) {
     return NextResponse.json({ error: "No products selected" }, { status: 400 });
+  }
+
+  let accountId: string | null = null;
+  let cardRow: Awaited<ReturnType<typeof prisma.customerCard.findUnique>> = null;
+  if (!offlineMethod) {
+    accountId = resolvePayoutAccountId(booking.stylist, business);
+    if (!accountId) {
+      return NextResponse.json({ error: "Connect Stripe first in Billing, or choose how they paid" }, { status: 400 });
+    }
+    if (!booking.customerId) {
+      return NextResponse.json({ error: "No card on file for this customer" }, { status: 400 });
+    }
+    cardRow = await prisma.customerCard.findUnique({
+      where: { customerId_connectedAccountId: { customerId: booking.customerId, connectedAccountId: accountId } },
+    });
+    if (!cardRow?.stripePaymentMethodId) {
+      return NextResponse.json({ error: "No card on file for this customer" }, { status: 400 });
+    }
   }
 
   const productIds = items.map((i: { productId: string }) => i.productId);
@@ -52,7 +58,7 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
   const productById = new Map(products.map((p) => [p.id, p]));
 
   let totalCents = 0;
-  const saleItemsData: { productId: string; quantity: number; priceCentsEach: number }[] = [];
+  const saleItemsData: { productId: string; quantity: number; priceCentsEach: number; costCentsEach: number }[] = [];
 
   for (const item of items as { productId: string; quantity: number }[]) {
     const product = productById.get(item.productId);
@@ -65,7 +71,7 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
       );
     }
     totalCents += product.priceCents * quantity;
-    saleItemsData.push({ productId: product.id, quantity, priceCentsEach: product.priceCents });
+    saleItemsData.push({ productId: product.id, quantity, priceCentsEach: product.priceCents, costCentsEach: product.costCents });
   }
 
   if (saleItemsData.length === 0) {
@@ -74,8 +80,8 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
 
   const commissionCents = Math.round((totalCents * booking.stylist.retailCommissionPct) / 100);
 
-  let paymentIntentId: string;
-  try {
+  let paymentIntentId: string | null = null;
+  if (!offlineMethod && cardRow && accountId) try {
     const paymentIntent = await stripe.paymentIntents.create(
       {
         amount: totalCents,
@@ -107,6 +113,7 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
         totalCents,
         commissionCents,
         stripePaymentIntentId: paymentIntentId,
+        paidMethod: offlineMethod,
         chargedAt: new Date(),
         items: { create: saleItemsData },
       },

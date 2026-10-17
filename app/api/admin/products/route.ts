@@ -10,7 +10,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Not signed in" }, { status: 401 });
   }
 
-  const { name, priceCents, stockQty } = await req.json();
+  const { name, priceCents, stockQty, costCents, lowStockAt } = await req.json();
   if (!name || typeof priceCents !== "number") {
     return NextResponse.json({ error: "Missing fields" }, { status: 400 });
   }
@@ -21,6 +21,8 @@ export async function POST(req: NextRequest) {
       name,
       priceCents: Math.round(priceCents),
       stockQty: typeof stockQty === "number" ? Math.round(stockQty) : 0,
+      costCents: typeof costCents === "number" && costCents >= 0 ? Math.round(costCents) : 0,
+      lowStockAt: typeof lowStockAt === "number" && lowStockAt >= 0 ? Math.round(lowStockAt) : 3,
     },
   });
 

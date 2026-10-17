@@ -70,7 +70,7 @@ export default async function GetPaidPage() {
               </div>
               <CollectPaymentButton
                 bookingId={b.id}
-                totalCents={b.priceCents + (b.sale?.totalCents ?? 0)}
+                totalCents={b.priceCents}
                 note={`${b.service.name} with ${stylist.name}`}
                 venmoHandle={stylist.venmoHandle}
                 cashAppHandle={stylist.cashAppHandle}
