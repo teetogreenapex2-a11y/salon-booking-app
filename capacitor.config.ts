@@ -16,6 +16,7 @@ const config: CapacitorConfig = {
 
   ios: {
     contentInset: 'never',
+    appendUserAgent: 'HairsalonixApp',
   },
 
   // The website hides the splash itself once the page has loaded

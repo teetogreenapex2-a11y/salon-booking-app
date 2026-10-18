@@ -78,7 +78,7 @@ export default async function BillingPage({
           <p className="name" style={{ color: status.color }}>
             {status.label}
           </p>
-          <p className="subtle" style={{ margin: "4px 0 0" }}>
+          <p className="subtle hide-in-app" style={{ margin: "4px 0 0" }}>
             {stylistCount} active stylist{stylistCount === 1 ? "" : "s"} · ${monthlyTotal}/month
             {addOnCount > 0 && ` ($20 base + $10 × ${addOnCount})`}
           </p>
@@ -96,7 +96,10 @@ export default async function BillingPage({
         </div>
       </div>
 
-      {hasSubscription ? <ManageBillingButton /> : <SubscribeButton />}
+      <div className="hide-in-app">{hasSubscription ? <ManageBillingButton /> : <SubscribeButton />}</div>
+      <p className="subtle show-in-app" style={{ maxWidth: 520 }}>
+        Your Hairsalonix plan is managed on our website, hairsalonix.com.
+      </p>
 
       <h2 className="display" style={{ fontSize: 20, margin: "36px 0 8px" }}>
         Accept customer payments

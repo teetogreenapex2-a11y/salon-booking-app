@@ -681,11 +681,11 @@ body {
 }
 
 /* --- Inside the iOS app: keep everything clear of the status bar / notch --- */
-html.native-app body {
+body {
   padding-top: env(safe-area-inset-top);
 }
 /* Solid strip behind the clock/battery so scrolling content never shows through it. */
-html.native-app::before {
+html::before {
   content: "";
   position: fixed;
   top: 0;
@@ -696,8 +696,8 @@ html.native-app::before {
   z-index: 1000;
   pointer-events: none;
 }
-html.native-app .hx-sticky-top,
-html.native-app .admin-nav {
+.hx-sticky-top,
+.admin-nav {
   position: sticky;
   top: env(safe-area-inset-top);
   z-index: 40;
@@ -717,3 +717,8 @@ a, button, input, select, textarea, label, summary, [role="button"], .card, .slo
   .btn-primary:hover { filter: none !important; box-shadow: none !important; }
   .admin-nav-links a:hover { color: inherit; background: transparent; }
 }
+
+/* Web-only vs app-only bits (billing is handled on the website, not inside the app). */
+.show-in-app { display: none; }
+html.native-app .show-in-app { display: revert; }
+html.native-app .hide-in-app { display: none !important; }

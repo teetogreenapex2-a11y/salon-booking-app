@@ -76,9 +76,12 @@ export default async function AdminLayout({ children }: { children: React.ReactN
           }}
         >
           Your free trial has ended.{" "}
-          <Link href="/admin/billing" style={{ fontWeight: 600, textDecoration: "underline" }}>
-            Subscribe to keep using Hairsalonix
-          </Link>
+          <span className="hide-in-app">
+            <Link href="/admin/billing" style={{ fontWeight: 600, textDecoration: "underline" }}>
+              Subscribe to keep using Hairsalonix
+            </Link>
+          </span>
+          <span className="show-in-app">Your plan is managed at hairsalonix.com.</span>
         </div>
       )}
 

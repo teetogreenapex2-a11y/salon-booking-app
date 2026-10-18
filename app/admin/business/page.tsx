@@ -5,6 +5,7 @@ import CoOwnerManager from "@/components/admin/CoOwnerManager";
 import BusinessForm from "@/components/admin/BusinessForm";
 import NavTabsEditor from "@/components/admin/NavTabsEditor";
 import { parseTabs } from "@/lib/navTabs";
+import DeleteAccount from "@/components/admin/DeleteAccount";
 
 export const dynamic = "force-dynamic";
 
@@ -31,6 +32,8 @@ export default async function BusinessSettingsPage() {
         initialMembers={members.map((m) => ({ id: m.id, email: m.email }))}
         canManage={!!ctx?.isPrimary}
       />
+
+      <DeleteAccount canDelete={!!ctx?.isPrimary} />
     </div>
   );
 }

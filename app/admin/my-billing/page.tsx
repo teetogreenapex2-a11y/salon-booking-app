@@ -84,7 +84,12 @@ export default async function MyBillingPage({
               {status.label}
             </p>
           </div>
-          {hasSubscription ? <StylistManageBillingButton /> : <StylistSubscribeButton />}
+          <div className="hide-in-app">
+            {hasSubscription ? <StylistManageBillingButton /> : <StylistSubscribeButton />}
+          </div>
+          <p className="subtle show-in-app" style={{ maxWidth: 520 }}>
+            Your Hairsalonix plan is managed on our website, hairsalonix.com.
+          </p>
         </>
       )}
 
