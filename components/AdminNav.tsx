@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import {
   LayoutDashboard,
   CalendarDays,
@@ -49,12 +49,46 @@ function isActive(pathname: string | null, href: string) {
 
 export default function AdminNav({ tabsJson }: { tabsJson?: string | null }) {
   const pathname = usePathname();
+  const router = useRouter();
   const [moreOpen, setMoreOpen] = useState(false);
 
   const chosenKeys = parseTabs(tabsJson);
   const chosen = chosenKeys.map((k) => NAV_CATALOG.find((c) => c.key === k)!).filter(Boolean);
   const rest = NAV_CATALOG.filter((c) => !chosenKeys.includes(c.key));
   const moreActive = rest.some((c) => isActive(pathname, c.href));
+
+  // Inside the Hairsalonix app, the native tab bar draws these tabs. Send it
+  // the list (and which one is active); it sends back taps as events.
+  const tabsKey = chosenKeys.join(",");
+  const activeKey = NAV_CATALOG.find((c) => isActive(pathname, c.href) && chosenKeys.includes(c.key))?.key ?? "";
+  useEffect(() => {
+    const native = (window as any).HxTabBar;
+    if (!native?.setTabs) return;
+    native.setTabs(
+      JSON.stringify(chosenKeys.map((k) => NAV_CATALOG.find((c) => c.key === k)!).map(({ key, label, href, sf }) => ({ key, label, href, sf }))),
+      activeKey
+    );
+    document.documentElement.classList.add("native-nav");
+  }, [tabsKey, activeKey]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    const native = (window as any).HxTabBar;
+    const go = (e: Event) => {
+      const href = (e as CustomEvent).detail?.href;
+      if (typeof href === "string" && href.startsWith("/admin")) router.push(href);
+    };
+    const more = () => setMoreOpen(true);
+    window.addEventListener("hx-navigate", go);
+    window.addEventListener("hx-open-more", more);
+    return () => {
+      window.removeEventListener("hx-navigate", go);
+      window.removeEventListener("hx-open-more", more);
+      // Leaving the admin area: take the native bar away again.
+      if (native?.hide) {
+        native.hide();
+        document.documentElement.classList.remove("native-nav");
+      }
+    };
+  }, [router]);
 
   // Close the sheet after navigating, and on Escape.
   useEffect(() => {
