@@ -681,11 +681,11 @@ body {
 }
 
 /* --- Inside the iOS app: keep everything clear of the status bar / notch --- */
-body {
+html.native-app body {
   padding-top: env(safe-area-inset-top);
 }
 /* Solid strip behind the clock/battery so scrolling content never shows through it. */
-html::before {
+html.native-app::before {
   content: "";
   position: fixed;
   top: 0;
@@ -696,8 +696,8 @@ html::before {
   z-index: 1000;
   pointer-events: none;
 }
-.hx-sticky-top,
-.admin-nav {
+html.native-app .hx-sticky-top,
+html.native-app .admin-nav {
   position: sticky;
   top: env(safe-area-inset-top);
   z-index: 40;
