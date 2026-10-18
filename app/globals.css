@@ -681,11 +681,11 @@ body {
 }
 
 /* --- Inside the iOS app: keep everything clear of the status bar / notch --- */
-html.native-app body {
+body {
   padding-top: env(safe-area-inset-top);
 }
 /* Solid strip behind the clock/battery so scrolling content never shows through it. */
-html.native-app::before {
+html::before {
   content: "";
   position: fixed;
   top: 0;
@@ -694,10 +694,26 @@ html.native-app::before {
   height: env(safe-area-inset-top);
   background: #faf6f3;
   z-index: 1000;
+  pointer-events: none;
 }
-html.native-app .hx-sticky-top,
-html.native-app .admin-nav {
+.hx-sticky-top,
+.admin-nav {
   position: sticky;
   top: env(safe-area-inset-top);
   z-index: 40;
+}
+
+/* --- Touch screens: taps must register the first time ---
+   On phones a tap also triggers :hover, and our hover effects move/resize the
+   button under the finger, so the tap can miss. Turn those effects off where
+   there is no real hover, and remove iOS's double-tap delay. */
+a, button, input, select, textarea, label, summary, [role="button"], .card, .slot-btn, .day-cell {
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+@media (hover: none) {
+  .card:not(.static):hover { transform: none !important; box-shadow: var(--shadow-sm) !important; }
+  .day-cell:hover, .slot-btn:hover { transform: none !important; }
+  .btn-primary:hover { filter: none !important; box-shadow: none !important; }
+  .admin-nav-links a:hover { color: inherit; background: transparent; }
 }
