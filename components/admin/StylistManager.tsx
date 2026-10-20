@@ -35,6 +35,11 @@ export default function StylistManager({
   const [name, setName] = useState("");
   const [specialty, setSpecialty] = useState("");
   const [saving, setSaving] = useState(false);
+  const [showFormer, setShowFormer] = useState(false);
+  const [editing, setEditing] = useState<string | null>(null);
+  const [nameDraft, setNameDraft] = useState("");
+  const [specialtyDraft, setSpecialtyDraft] = useState("");
+  const [editSaving, setEditSaving] = useState(false);
 
   // Per-row draft email text and save state, keyed by stylist id — lets
   // each row's "Set login" box be edited independently.
@@ -124,6 +129,37 @@ export default function StylistManager({
     router.refresh();
   }
 
+  function startEdit(s: Stylist) {
+    setEditing(s.id);
+    setNameDraft(s.name);
+    setSpecialtyDraft(s.specialty ?? "");
+  }
+
+  async function saveEdit(id: string) {
+    if (!nameDraft.trim()) {
+      alert("Name can't be empty.");
+      return;
+    }
+    setEditSaving(true);
+    const res = await fetch(`/api/admin/stylists/${id}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name: nameDraft, specialty: specialtyDraft }),
+    });
+    setEditSaving(false);
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      alert(data.error || "Couldn't save that — try again.");
+      return;
+    }
+    const updated = await res.json();
+    setStylists((list) =>
+      list.map((x) => (x.id === id ? { ...x, name: updated.name, specialty: updated.specialty } : x))
+    );
+    setEditing(null);
+    router.refresh();
+  }
+
   async function toggleActive(id: string, active: boolean) {
     await fetch(`/api/admin/stylists/${id}`, {
       method: "PUT",
@@ -199,18 +235,49 @@ export default function StylistManager({
   return (
     <div>
       <div className="list" style={{ marginBottom: 28 }}>
-        {stylists.map((s) => (
+        {[...stylists.filter((x) => x.active), ...(showFormer ? stylists.filter((x) => !x.active) : [])].map((s) => (
           <div key={s.id} className="card static" style={{ flexDirection: "column", alignItems: "stretch", gap: 10 }}>
             <StylistPhotoUpload stylistId={s.id} name={s.name} photoUrl={s.photoUrl} />
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
               <div>
-                <p className="name">
-                  {s.name}
-                  {!s.active && <span className="subtle"> (inactive)</span>}
-                </p>
-                {s.specialty && <p className="subtle" style={{ margin: "2px 0 0" }}>{s.specialty}</p>}
+                {editing === s.id ? (
+                  <div style={{ display: "flex", flexDirection: "column", gap: 6, minWidth: 0 }}>
+                    <input value={nameDraft} onChange={(e) => setNameDraft(e.target.value)} placeholder="Name" />
+                    <input
+                      value={specialtyDraft}
+                      onChange={(e) => setSpecialtyDraft(e.target.value)}
+                      placeholder="Specialty (optional)"
+                    />
+                    <div style={{ display: "flex", gap: 8 }}>
+                      <button
+                        className="btn-primary"
+                        style={{ padding: "6px 12px", fontSize: 12 }}
+                        disabled={editSaving}
+                        onClick={() => saveEdit(s.id)}
+                      >
+                        {editSaving ? "Saving…" : "Save"}
+                      </button>
+                      <button className="btn-ghost" style={{ padding: "6px 12px", fontSize: 12 }} onClick={() => setEditing(null)}>
+                        Cancel
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <>
+                    <p className="name">
+                      {s.name}
+                      {!s.active && <span className="subtle"> (inactive)</span>}
+                    </p>
+                    {s.specialty && <p className="subtle" style={{ margin: "2px 0 0" }}>{s.specialty}</p>}
+                  </>
+                )}
               </div>
               <div className="row" style={{ gap: 8 }}>
+                {editing !== s.id && (
+                  <button className="btn-ghost" style={{ padding: "6px 12px", fontSize: 12 }} onClick={() => startEdit(s)}>
+                    Edit name
+                  </button>
+                )}
                 <Link
                   href={`/admin/stylists/${s.id}/pricing`}
                   className="btn-ghost"
@@ -223,7 +290,7 @@ export default function StylistManager({
                   style={{ padding: "6px 12px", fontSize: 12 }}
                   onClick={() => toggleActive(s.id, s.active)}
                 >
-                  {s.active ? "Deactivate" : "Reactivate"}
+                  {s.active ? "Hide (no longer here)" : "Bring back"}
                 </button>
               </div>
             </div>
@@ -437,6 +504,15 @@ export default function StylistManager({
           </div>
         ))}
         {stylists.length === 0 && <p className="subtle">No stylists yet — add one below.</p>}
+        {stylists.some((x) => !x.active) && (
+          <button
+            className="btn-ghost"
+            style={{ alignSelf: "flex-start", padding: "6px 12px", fontSize: 12 }}
+            onClick={() => setShowFormer((v) => !v)}
+          >
+            {showFormer ? "Hide" : "Show"} former stylists ({stylists.filter((x) => !x.active).length})
+          </button>
+        )}
       </div>
 
       <h2 className="display" style={{ fontSize: 20, marginBottom: 12 }}>

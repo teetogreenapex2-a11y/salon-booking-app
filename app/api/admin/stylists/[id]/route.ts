@@ -20,7 +20,28 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
 
-  const data = await req.json();
+  const body = await req.json();
+
+  // Only these fields can be changed from this endpoint (never businessId,
+  // Stripe ids, etc.).
+  const ALLOWED = [
+    "name", "specialty", "active", "email",
+    "independentPayouts", "independentBilling",
+    "canEditOwnPricing", "canEditOwnHours", "canAddServices",
+    "retailCommissionPct", "venmoHandle", "cashAppHandle", "zelleInfo",
+  ];
+  const data: Record<string, any> = {};
+  for (const k of ALLOWED) if (k in body) data[k] = body[k];
+
+  if ("name" in data) {
+    const name = String(data.name ?? "").trim().slice(0, 80);
+    if (!name) return NextResponse.json({ error: "Name can't be empty." }, { status: 400 });
+    data.name = name;
+  }
+  if ("specialty" in data) {
+    const sp = String(data.specialty ?? "").trim().slice(0, 120);
+    data.specialty = sp || null;
+  }
 
   // Payment handles are shown to customers as links, so they're cleaned
   // and validated before they're saved (see lib/paymentHandles.ts).
