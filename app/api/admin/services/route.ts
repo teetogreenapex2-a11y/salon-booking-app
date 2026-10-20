@@ -17,5 +17,16 @@ export async function POST(req: NextRequest) {
   const service = await prisma.service.create({
     data: { businessId: business.id, name, durationMin, priceCents },
   });
+  // Stylists set to "only their own services" don't get the standard menu.
+  const ownOnly = await prisma.stylist.findMany({
+    where: { businessId: business.id, ownServicesOnly: true },
+    select: { id: true },
+  });
+  if (ownOnly.length > 0) {
+    await prisma.stylistService.createMany({
+      data: ownOnly.map((o) => ({ stylistId: o.id, serviceId: service.id, priceCents: 0 })),
+      skipDuplicates: true,
+    });
+  }
   return NextResponse.json(service);
 }

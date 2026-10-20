@@ -153,6 +153,10 @@ model Stylist {
   canEditOwnHours   Boolean @default(true)
   // Off by default: lets a stylist add new services to the shared menu.
   canAddServices    Boolean @default(false)
+  // When on, this stylist offers ONLY services they added themselves; the
+  // salon's standard menu is hidden for them (implemented with the same
+  // "$0 override = not offered" rows the pricing page already uses).
+  ownServicesOnly   Boolean @default(false)
 
   // Commission this stylist earns on retail product sales they ring up
   // (0-100). Defaults to 0 — no commission — until the owner sets one.
@@ -207,6 +211,8 @@ model Service {
   // Printed on the service's QR label; scanned to add it to a client's bill.
   barcode     String?
   active      Boolean  @default(true)
+  // Set when a stylist added this service themselves (see Stylist.ownServicesOnly).
+  ownerStylistId String?
 
   bookings    Booking[]
   waitlist    WaitlistEntry[]

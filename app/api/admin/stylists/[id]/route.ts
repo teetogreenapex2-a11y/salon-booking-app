@@ -27,7 +27,7 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
   const ALLOWED = [
     "name", "specialty", "active", "email",
     "independentPayouts", "independentBilling",
-    "canEditOwnPricing", "canEditOwnHours", "canAddServices",
+    "canEditOwnPricing", "canEditOwnHours", "canAddServices", "ownServicesOnly",
     "retailCommissionPct", "venmoHandle", "cashAppHandle", "zelleInfo",
   ];
   const data: Record<string, any> = {};
@@ -54,6 +54,10 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
   }
   if ("zelleInfo" in data) data.zelleInfo = cleanZelle(data.zelleInfo);
 
+  // Turning on "own services only" also lets them add services; the rest is
+  // applied after the update below.
+  if (data.ownServicesOnly === true) data.canAddServices = true;
+
   let stylist;
   try {
     stylist = await prisma.stylist.update({ where: { id: params.id }, data });
@@ -67,6 +71,33 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
       );
     }
     throw err;
+  }
+
+  if ("ownServicesOnly" in data && data.ownServicesOnly !== existing.ownServicesOnly) {
+    if (data.ownServicesOnly) {
+      // Hide every service this stylist didn't add themselves.
+      const others = await prisma.service.findMany({
+        where: { businessId: business.id, OR: [{ ownerStylistId: null }, { ownerStylistId: { not: params.id } }] },
+        select: { id: true },
+      });
+      await prisma.$transaction([
+        prisma.stylistService.deleteMany({
+          where: { stylistId: params.id, serviceId: { in: others.map((o) => o.id) } },
+        }),
+        prisma.stylistService.createMany({
+          data: others.map((o) => ({ stylistId: params.id, serviceId: o.id, priceCents: 0 })),
+        }),
+      ]);
+    } else {
+      // Show the standard menu again (undo the hiding rows for services they didn't add).
+      const others = await prisma.service.findMany({
+        where: { businessId: business.id, OR: [{ ownerStylistId: null }, { ownerStylistId: { not: params.id } }] },
+        select: { id: true },
+      });
+      await prisma.stylistService.deleteMany({
+        where: { stylistId: params.id, priceCents: 0, serviceId: { in: others.map((o) => o.id) } },
+      });
+    }
   }
 
   // Toggling `active` off/on, or any edit, is a good moment to re-check the

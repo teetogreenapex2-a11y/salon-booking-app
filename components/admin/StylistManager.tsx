@@ -16,6 +16,7 @@ type Stylist = {
   canEditOwnPricing: boolean;
   canEditOwnHours: boolean;
   canAddServices: boolean;
+  ownServicesOnly: boolean;
   photoUrl: string | null;
   retailCommissionPct: number;
   venmoHandle: string | null;
@@ -172,7 +173,7 @@ export default function StylistManager({
 
   async function toggleFlag(
     id: string,
-    field: "independentPayouts" | "independentBilling" | "canEditOwnPricing" | "canEditOwnHours" | "canAddServices",
+    field: "independentPayouts" | "independentBilling" | "canEditOwnPricing" | "canEditOwnHours" | "canAddServices" | "ownServicesOnly",
     value: boolean
   ) {
     const res = await fetch(`/api/admin/stylists/${id}`, {
@@ -184,7 +185,13 @@ export default function StylistManager({
       alert("Couldn't save that — try again.");
       return;
     }
-    setStylists((list) => list.map((s) => (s.id === id ? { ...s, [field]: !value } : s)));
+    setStylists((list) =>
+      list.map((s) =>
+        s.id === id
+          ? { ...s, [field]: !value, ...(field === "ownServicesOnly" && !value ? { canAddServices: true } : {}) }
+          : s
+      )
+    );
     router.refresh();
   }
 
@@ -406,6 +413,14 @@ export default function StylistManager({
                   onChange={() => toggleFlag(s.id, "canAddServices", s.canAddServices)}
                 />
                 Can add new services
+              </label>
+              <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13 }}>
+                <input
+                  type="checkbox"
+                  checked={s.ownServicesOnly}
+                  onChange={() => toggleFlag(s.id, "ownServicesOnly", s.ownServicesOnly)}
+                />
+                Only offers services they add themselves (hides the salon&rsquo;s standard menu)
               </label>
             </div>
 

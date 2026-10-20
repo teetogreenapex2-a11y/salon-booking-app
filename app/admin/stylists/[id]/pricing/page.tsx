@@ -3,6 +3,7 @@ import { requireOwnerOrStylist } from "@/lib/access";
 import { notFound, redirect } from "next/navigation";
 import Link from "next/link";
 import StylistPricingForm from "@/components/admin/StylistPricingForm";
+import AddServiceForm from "@/components/admin/AddServiceForm";
 
 export const dynamic = "force-dynamic";
 
@@ -27,7 +28,11 @@ export default async function StylistPricingPage({ params }: { params: { id: str
   const locked = access.role === "stylist" && !stylist.canEditOwnPricing;
 
   const services = await prisma.service.findMany({
-    where: { businessId: business.id, active: true },
+    where: {
+      businessId: business.id,
+      active: true,
+      ...(stylist.ownServicesOnly ? { ownerStylistId: stylist.id } : {}),
+    },
     orderBy: { name: "asc" },
   });
 
@@ -50,6 +55,9 @@ export default async function StylistPricingPage({ params }: { params: { id: str
         Leave a field blank to use the business&rsquo;s standard price or duration for a service, or check
         &ldquo;I don&rsquo;t do this service&rdquo; to hide it entirely from customers booking with this stylist.
       </p>
+      {((access.role === "stylist" && stylist.canAddServices) || (access.role === "owner" && stylist.ownServicesOnly)) && (
+        <AddServiceForm stylistId={stylist.id} />
+      )}
       <StylistPricingForm stylistId={stylist.id} services={services} overrides={overrides} locked={locked} />
     </div>
   );
