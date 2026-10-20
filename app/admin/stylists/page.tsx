@@ -13,6 +13,23 @@ export default async function StylistsPage() {
     orderBy: { createdAt: "asc" },
   });
 
+  // What each stylist actually offers: every active service except those they
+  // opted out of (a $0 override means "I don't do this"), with their own
+  // price/duration where they set one.
+  const [services, overrides] = await Promise.all([
+    prisma.service.findMany({ where: { businessId: business.id, active: true }, orderBy: { name: "asc" } }),
+    prisma.stylistService.findMany({ where: { stylist: { businessId: business.id } } }),
+  ]);
+  const offeredByStylist: Record<string, { name: string; priceCents: number; durationMin: number }[]> = {};
+  for (const st of stylists) {
+    offeredByStylist[st.id] = services
+      .map((sv) => {
+        const o = overrides.find((x) => x.stylistId === st.id && x.serviceId === sv.id);
+        return { name: sv.name, priceCents: o?.priceCents ?? sv.priceCents, durationMin: o?.durationMin ?? sv.durationMin };
+      })
+      .filter((x) => x.priceCents !== 0);
+  }
+
   const requests = await prisma.joinRequest.findMany({
     where: { businessId: business.id, status: "PENDING" },
     orderBy: { createdAt: "asc" },
@@ -31,7 +48,7 @@ export default async function StylistsPage() {
           ))}
         </div>
       )}
-      <StylistManager businessId={business.id} initialStylists={stylists} />
+      <StylistManager businessId={business.id} initialStylists={stylists} offeredByStylist={offeredByStylist} />
     </div>
   );
 }

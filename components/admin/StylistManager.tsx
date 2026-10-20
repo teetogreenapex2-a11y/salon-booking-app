@@ -27,9 +27,11 @@ type Stylist = {
 export default function StylistManager({
   businessId,
   initialStylists,
+  offeredByStylist,
 }: {
   businessId: string;
   initialStylists: Stylist[];
+  offeredByStylist: Record<string, { name: string; priceCents: number; durationMin: number }[]>;
 }) {
   const router = useRouter();
   const [stylists, setStylists] = useState(initialStylists);
@@ -37,6 +39,7 @@ export default function StylistManager({
   const [specialty, setSpecialty] = useState("");
   const [saving, setSaving] = useState(false);
   const [showFormer, setShowFormer] = useState(false);
+  const [openOffers, setOpenOffers] = useState<string | null>(null);
   const [editing, setEditing] = useState<string | null>(null);
   const [nameDraft, setNameDraft] = useState("");
   const [specialtyDraft, setSpecialtyDraft] = useState("");
@@ -280,6 +283,13 @@ export default function StylistManager({
                 )}
               </div>
               <div className="row" style={{ gap: 8 }}>
+                <button
+                  className="btn-ghost"
+                  style={{ padding: "6px 12px", fontSize: 12 }}
+                  onClick={() => setOpenOffers(openOffers === s.id ? null : s.id)}
+                >
+                  {openOffers === s.id ? "Hide services" : `Services (${(offeredByStylist[s.id] ?? []).length})`}
+                </button>
                 {editing !== s.id && (
                   <button className="btn-ghost" style={{ padding: "6px 12px", fontSize: 12 }} onClick={() => startEdit(s)}>
                     Edit name
@@ -301,6 +311,31 @@ export default function StylistManager({
                 </button>
               </div>
             </div>
+
+            {openOffers === s.id && (
+              <div style={{ paddingTop: 10, borderTop: "1px solid rgba(36,28,31,0.08)" }}>
+                <p className="subtle" style={{ fontSize: 12, fontWeight: 600, margin: "0 0 6px" }}>
+                  Services {s.name.split(" ")[0]} offers
+                </p>
+                {(offeredByStylist[s.id] ?? []).length === 0 ? (
+                  <p className="subtle" style={{ margin: 0 }}>No services offered yet.</p>
+                ) : (
+                  <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                    {(offeredByStylist[s.id] ?? []).map((o) => (
+                      <div key={o.name} style={{ display: "flex", justifyContent: "space-between", gap: 12, fontSize: 13 }}>
+                        <span>{o.name}</span>
+                        <span className="subtle" style={{ whiteSpace: "nowrap" }}>
+                          ${(o.priceCents / 100).toFixed(0)} · {o.durationMin} min
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                <Link href={`/admin/stylists/${s.id}/pricing`} className="subtle" style={{ display: "inline-block", marginTop: 8, textDecoration: "underline" }}>
+                  Change prices or services
+                </Link>
+              </div>
+            )}
 
             <div
               style={{
