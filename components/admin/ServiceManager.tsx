@@ -98,19 +98,30 @@ export default function ServiceManager({
         className="customer-form"
         style={{ marginTop: 0, paddingTop: 0, borderTop: "none", maxWidth: 360 }}
       >
-        <input placeholder="Name" value={name} onChange={(e) => setName(e.target.value)} />
-        <input
-          placeholder="Duration (minutes)"
-          type="number"
-          value={duration}
-          onChange={(e) => setDuration(e.target.value)}
-        />
-        <input
-          placeholder="Price (dollars)"
-          type="number"
-          value={price}
-          onChange={(e) => setPrice(e.target.value)}
-        />
+        <label>
+          <span className="subtle" style={{ fontSize: 12, display: "block", marginBottom: 4 }}>Service name</span>
+          <input placeholder="e.g. Balayage" value={name} onChange={(e) => setName(e.target.value)} style={{ width: "100%", boxSizing: "border-box" }} />
+        </label>
+        <label>
+          <span className="subtle" style={{ fontSize: 12, display: "block", marginBottom: 4 }}>Duration (minutes)</span>
+          <input
+            placeholder="e.g. 60"
+            type="number"
+            value={duration}
+            onChange={(e) => setDuration(e.target.value)}
+            style={{ width: "100%", boxSizing: "border-box" }}
+          />
+        </label>
+        <label>
+          <span className="subtle" style={{ fontSize: 12, display: "block", marginBottom: 4 }}>Price ($)</span>
+          <input
+            placeholder="e.g. 85"
+            type="number"
+            value={price}
+            onChange={(e) => setPrice(e.target.value)}
+            style={{ width: "100%", boxSizing: "border-box" }}
+          />
+        </label>
         <button className="btn-primary" type="submit" disabled={saving}>
           {saving ? "Adding…" : "Add service"}
         </button>

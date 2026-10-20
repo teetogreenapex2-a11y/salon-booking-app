@@ -39,10 +39,19 @@ export default function AddServiceForm({ stylistId }: { stylistId: string }) {
       <p className="subtle" style={{ fontSize: 12, margin: 0 }}>
         It starts out for you only. Your salon owner can turn it on for other stylists.
       </p>
-      <input style={box} placeholder="Service name (e.g. Balayage)" value={name} onChange={(e) => setName(e.target.value)} />
-      <div className="row" style={{ gap: 12, flexWrap: "wrap", alignItems: "stretch" }}>
-        <input style={{ ...box, flex: "1 1 130px" }} type="number" min="1" placeholder="Price ($)" value={price} onChange={(e) => setPrice(e.target.value)} />
-        <input style={{ ...box, flex: "1 1 130px" }} type="number" min="5" step="5" placeholder="Duration (min)" value={duration} onChange={(e) => setDuration(e.target.value)} />
+      <label style={{ display: "block", minWidth: 0 }}>
+        <span className="subtle" style={{ fontSize: 12, display: "block", marginBottom: 4 }}>Service name</span>
+        <input style={box} placeholder="e.g. Balayage" value={name} onChange={(e) => setName(e.target.value)} />
+      </label>
+      <div style={{ display: "grid", gap: 12, gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 140px), 1fr))" }}>
+        <label style={{ display: "block", minWidth: 0 }}>
+          <span className="subtle" style={{ fontSize: 12, display: "block", marginBottom: 4 }}>Price ($)</span>
+          <input style={box} type="number" min="1" placeholder="e.g. 85" value={price} onChange={(e) => setPrice(e.target.value)} />
+        </label>
+        <label style={{ display: "block", minWidth: 0 }}>
+          <span className="subtle" style={{ fontSize: 12, display: "block", marginBottom: 4 }}>Duration (minutes)</span>
+          <input style={box} type="number" min="5" step="5" placeholder="e.g. 60" value={duration} onChange={(e) => setDuration(e.target.value)} />
+        </label>
       </div>
       {error && <p style={{ color: "#b3563e", fontSize: 13, margin: 0 }}>{error}</p>}
       <button className="btn-primary" onClick={add} disabled={saving || !name.trim() || !price || !duration}>
