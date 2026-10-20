@@ -89,12 +89,13 @@ export default function StylistPricingForm({
         {services.map((s) => {
           const row = rows.find((r) => r.serviceId === s.id)!;
           return (
-            <div key={s.id} className="card static" style={{ flexDirection: "column", alignItems: "stretch", gap: 10 }}>
-              <div className="row" style={{ justifyContent: "space-between" }}>
+            <div key={s.id} className="card static" style={{ flexDirection: "column", alignItems: "stretch", gap: 10, boxSizing: "border-box", maxWidth: "100%", minWidth: 0 }}>
+              <div className="row" style={{ justifyContent: "space-between", flexWrap: "wrap", gap: 8 }}>
                 <p className="name">{s.name}</p>
                 <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12 }}>
                   <input
                     type="checkbox"
+                    style={{ width: "auto", flexShrink: 0 }}
                     checked={!row.offered}
                     disabled={locked}
                     onChange={(e) => toggleOffered(s.id, !e.target.checked)}
@@ -107,13 +108,14 @@ export default function StylistPricingForm({
                   <p className="subtle" style={{ fontSize: 12, margin: 0 }}>
                     Standard: ${(s.priceCents / 100).toFixed(0)} · {s.durationMin} min
                   </p>
-                  <div className="row" style={{ gap: 12 }}>
-                    <label style={{ flex: 1 }}>
+                  <div style={{ display: "grid", gap: 12, gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 220px), 1fr))" }}>
+                    <label style={{ display: "block", minWidth: 0 }}>
                       <span className="subtle" style={{ fontSize: 12, display: "block", marginBottom: 4 }}>
                         This stylist&rsquo;s price ($)
                       </span>
                       <input
                         type="number"
+                        style={{ width: "100%", boxSizing: "border-box", minWidth: 0 }}
                         min="0"
                         placeholder={`${(s.priceCents / 100).toFixed(0)}`}
                         value={row.price}
@@ -121,12 +123,13 @@ export default function StylistPricingForm({
                         onChange={(e) => updateRow(s.id, "price", e.target.value)}
                       />
                     </label>
-                    <label style={{ flex: 1 }}>
+                    <label style={{ display: "block", minWidth: 0 }}>
                       <span className="subtle" style={{ fontSize: 12, display: "block", marginBottom: 4 }}>
                         This stylist&rsquo;s duration (min)
                       </span>
                       <input
                         type="number"
+                        style={{ width: "100%", boxSizing: "border-box", minWidth: 0 }}
                         min="5"
                         step="5"
                         placeholder={`${s.durationMin}`}
@@ -145,7 +148,7 @@ export default function StylistPricingForm({
             </div>
           );
         })}
-        {services.length === 0 && <p className="subtle">No services yet — add some under Services first.</p>}
+        {services.length === 0 && <p className="subtle">No services yet. The salon owner adds them under Services.</p>}
       </div>
 
       <button className="btn-primary" onClick={save} disabled={locked || saving || services.length === 0}>
