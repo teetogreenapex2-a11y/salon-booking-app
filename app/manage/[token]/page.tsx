@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { bookingByToken } from "@/lib/manageBooking";
 import { changeStatus, formatWhen } from "@/lib/manage";
+import SalonHeader from "@/components/SalonHeader";
 import ManageBooking from "@/components/ManageBooking";
 
 export const dynamic = "force-dynamic";
@@ -75,17 +76,7 @@ export default async function ManagePage({ params }: { params: { token: string }
 
   return (
     <main className="page">
-      {booking.business.logoUrl ? (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img
-          src={booking.business.logoUrl}
-          alt=""
-          style={{ display: "block", margin: "0 auto 10px", maxHeight: 64, maxWidth: 160, objectFit: "contain" }}
-        />
-      ) : null}
-      <h1 className="display title" style={{ fontSize: 26, textAlign: "center" }}>
-        {booking.business.name}
-      </h1>
+      <SalonHeader name={booking.business.name} coverUrl={booking.business.coverUrl} compact />
 
       <ManageBooking
         token={params.token}

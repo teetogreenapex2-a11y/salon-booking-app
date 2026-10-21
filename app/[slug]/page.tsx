@@ -1,9 +1,10 @@
 export const dynamic = "force-dynamic";
+import SalonHeader from "@/components/SalonHeader";
 import InstallTip from "@/components/InstallTip";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
-import { MapPin, Clock, Instagram, Star, Scissors } from "lucide-react";
+import { MapPin, Clock, Instagram, Star } from "lucide-react";
 
 export async function generateMetadata({ params }: { params: { slug: string } }) {
   const b = await prisma.business.findUnique({
@@ -49,37 +50,7 @@ export default async function BusinessPage({ params }: { params: { slug: string 
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd).replace(/</g, "\\u003c") }}
       />
-      <div
-        className="hero"
-        style={
-          business.coverUrl
-            ? { background: `linear-gradient(180deg, rgba(0,0,0,0) 45%, rgba(0,0,0,0.28) 100%), center / cover no-repeat url(${business.coverUrl})`, position: "relative", marginBottom: business.logoUrl ? 46 : 20, overflow: "visible" }
-            : undefined
-        }
-      >
-        {business.coverUrl ? (
-          business.logoUrl && (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
-              src={business.logoUrl}
-              alt={business.name}
-              style={{ position: "absolute", left: 20, bottom: -34, width: 72, height: 72, borderRadius: 18, objectFit: "contain", background: "var(--panel)", padding: 6, boxShadow: "0 4px 14px rgba(0,0,0,0.22)" }}
-            />
-          )
-        ) : business.logoUrl ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
-            src={business.logoUrl}
-            alt={business.name}
-            style={{ maxWidth: "100%", maxHeight: "100%", objectFit: "contain" }}
-          />
-        ) : (
-          <Scissors size={32} color="var(--berry)" />
-        )}
-      </div>
-
-      <h1 className="display title">{business.name}</h1>
-      {business.tagline && <p className="tagline">{business.tagline}</p>}
+      <SalonHeader name={business.name} coverUrl={business.coverUrl} tagline={business.tagline} />
 
       <div className="meta">
         {business.address && (
