@@ -1,4 +1,3 @@
-import { fmtInTz } from "@/lib/tz";
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { sendSms } from "@/lib/sms";
@@ -43,13 +42,6 @@ export async function POST(req: NextRequest) {
   });
 
   if (conflict) {
-    // Same person tapping twice: hand back the booking they already made.
-    if (
-      conflict.startsAt.getTime() === start.getTime() &&
-      conflict.customerEmail.toLowerCase() === String(customer.email).toLowerCase()
-    ) {
-      return NextResponse.json(conflict);
-    }
     return NextResponse.json({ error: "Slot no longer available" }, { status: 409 });
   }
 
@@ -100,7 +92,7 @@ export async function POST(req: NextRequest) {
   const origin = req.headers.get("origin") || `https://${process.env.VERCEL_URL}`;
   const link = `${origin}/${business.slug}/booking/${booking.id}`;
   const manageLink = manageUrl(booking.manageToken!, origin);
-  const when = fmtInTz(start, business.timezone, {
+  const when = start.toLocaleString(undefined, {
     weekday: "short",
     month: "short",
     day: "numeric",
@@ -110,7 +102,7 @@ export async function POST(req: NextRequest) {
 
   const phone = customer.phone || customerRecord?.phone;
   if (phone && smsConsent) {
-    await sendSms(phone, `Hi ${(customer.name || "").trim().split(/\s+/)[0] || "there"}! You're booked at ${business.name} for ${when}. See details, reschedule or add to calendar: ${manageLink} Msgs: 1 confirmation + 1 reminder. Msg & data rates may apply. Reply STOP to cancel, HELP for help.`).catch((err) =>
+    sendSms(phone, `Hi ${(customer.name || "").trim().split(/\s+/)[0] || "there"}! You're booked at ${business.name} for ${when}. See details, reschedule or add to calendar: ${manageLink} Msgs: 1 confirmation + 1 reminder. Msg & data rates may apply. Reply STOP to cancel, HELP for help.`).catch((err) =>
       console.error("Booking confirmation SMS failed", err)
     );
   }
@@ -127,7 +119,7 @@ export async function POST(req: NextRequest) {
       )
     : "";
 
-  await sendEmail(
+  sendEmail(
     customer.email,
     `You're booked with ${business.name}`,
     `
