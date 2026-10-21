@@ -1,3 +1,4 @@
+import { fmtInTz } from "@/lib/tz";
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { sendSms } from "@/lib/sms";
@@ -42,6 +43,13 @@ export async function POST(req: NextRequest) {
   });
 
   if (conflict) {
+    // Same person tapping twice: hand back the booking they already made.
+    if (
+      conflict.startsAt.getTime() === start.getTime() &&
+      conflict.customerEmail.toLowerCase() === String(customer.email).toLowerCase()
+    ) {
+      return NextResponse.json(conflict);
+    }
     return NextResponse.json({ error: "Slot no longer available" }, { status: 409 });
   }
 
@@ -92,7 +100,7 @@ export async function POST(req: NextRequest) {
   const origin = req.headers.get("origin") || `https://${process.env.VERCEL_URL}`;
   const link = `${origin}/${business.slug}/booking/${booking.id}`;
   const manageLink = manageUrl(booking.manageToken!, origin);
-  const when = start.toLocaleString(undefined, {
+  const when = fmtInTz(start, business.timezone, {
     weekday: "short",
     month: "short",
     day: "numeric",
@@ -102,7 +110,7 @@ export async function POST(req: NextRequest) {
 
   const phone = customer.phone || customerRecord?.phone;
   if (phone && smsConsent) {
-    sendSms(phone, `Hi ${(customer.name || "").trim().split(/\s+/)[0] || "there"}! You're booked at ${business.name} for ${when}. See details, reschedule or add to calendar: ${manageLink} Msgs: 1 confirmation + 1 reminder. Msg & data rates may apply. Reply STOP to cancel, HELP for help.`).catch((err) =>
+    await sendSms(phone, `Hi ${(customer.name || "").trim().split(/\s+/)[0] || "there"}! You're booked at ${business.name} for ${when}. See details, reschedule or add to calendar: ${manageLink} Msgs: 1 confirmation + 1 reminder. Msg & data rates may apply. Reply STOP to cancel, HELP for help.`).catch((err) =>
       console.error("Booking confirmation SMS failed", err)
     );
   }
@@ -119,7 +127,7 @@ export async function POST(req: NextRequest) {
       )
     : "";
 
-  sendEmail(
+  await sendEmail(
     customer.email,
     `You're booked with ${business.name}`,
     `
@@ -129,6 +137,40 @@ export async function POST(req: NextRequest) {
       <p>Need to change plans? <a href="${manageLink}">Reschedule or cancel your appointment</a>.</p>${payBlock}
     `
   ).catch((err) => console.error("Booking confirmation email failed", err));
+
+  // Tell the salon: the stylist, and the owner too if that's someone else.
+  // (Skipped when the owner/stylist makes the booking themselves in admin.)
+  if (body.fromAdmin !== true) {
+    try {
+      const owner = business.ownerId
+        ? await prisma.user.findUnique({ where: { id: business.ownerId }, select: { email: true } })
+        : null;
+      const seen = new Set<string>();
+      const recipients = [stylistRecord?.email, owner?.email]
+        .map((e) => (e || "").trim())
+        .filter((e) => {
+          const k = e.toLowerCase();
+          if (!e || seen.has(k)) return false;
+          seen.add(k);
+          return true;
+        });
+      const esc = (t: string) => String(t).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c] as string));
+      for (const to of recipients) {
+        await sendEmail(
+          to,
+          `New booking: ${customer.name} — ${when}`,
+          `
+            <p><strong>${esc(customer.name)}</strong> just booked <strong>${esc(info.service.name)}</strong>
+            with <strong>${esc(stylistRecord?.name ?? "")}</strong> for <strong>${when}</strong>.</p>
+            <p>Email: ${esc(customer.email)}${customer.phone ? `<br>Phone: ${esc(customer.phone)}` : ""}</p>
+            <p><a href="${origin}/admin/bookings">See it in your bookings</a></p>
+          `
+        ).catch((err) => console.error("Salon booking notice failed", err));
+      }
+    } catch (err) {
+      console.error("Salon booking notice failed", err);
+    }
+  }
 
   return NextResponse.json(booking);
 }

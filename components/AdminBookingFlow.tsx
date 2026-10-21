@@ -138,6 +138,7 @@ export default function AdminBookingFlow({
           phone: customer.phone || "",
         },
         customerId: customerId ?? customer.id,
+        fromAdmin: true,
       }),
     });
     } catch {
