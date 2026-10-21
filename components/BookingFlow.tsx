@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Clock, ChevronLeft, ChevronRight, Scissors, Palette, Sparkles, Droplets, Brush, Wind } from "lucide-react";
 import CardOnFileStep from "./CardOnFileStep";
@@ -41,6 +41,7 @@ export default function BookingFlow({
   const [slots, setSlots] = useState<number[]>([]);
   const [loadingSlots, setLoadingSlots] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const inFlight = useRef(false);
   const [customer, setCustomer] = useState({ name: "", email: "", phone: "" });
   const [smsConsent, setSmsConsent] = useState(false);
 
@@ -117,12 +118,17 @@ export default function BookingFlow({
 
   async function submitBooking(customerId: string | null) {
     if (!service || !stylist || pendingStartMin === null) return;
+    // A double tap must not send the booking twice.
+    if (inFlight.current) return;
+    inFlight.current = true;
     setSubmitting(true);
     const date = week[dateIdx];
     const startsAt = new Date(date);
     startsAt.setHours(0, pendingStartMin, 0, 0);
 
-    const res = await fetch("/api/bookings", {
+    let res: Response;
+    try {
+      res = await fetch("/api/bookings", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -136,7 +142,12 @@ export default function BookingFlow({
       }),
     });
 
-    setSubmitting(false);
+    } catch {
+      inFlight.current = false;
+      setSubmitting(false);
+      alert("Couldn't reach the server. Check your connection and try again.");
+      return;
+    }
 
     if (res.ok) {
       const booking = await res.json();
@@ -145,8 +156,15 @@ export default function BookingFlow({
         localStorage.setItem("hsx_last_salon", businessSlug);
       } catch {}
       router.push(`/${businessSlug}/book/confirm?id=${booking.id}`);
+      return; // keep the button locked while the page changes
     } else {
-      alert("That slot was just booked — pick another time.");
+      inFlight.current = false;
+      setSubmitting(false);
+      alert(
+        res.status === 409
+          ? "That slot was just booked — pick another time."
+          : "Something went wrong and your booking wasn't saved. Please try again."
+      );
       setStep("calendar");
       setPendingStartMin(null);
       loadSlots(dateIdx, weekOffset, stylist, service);

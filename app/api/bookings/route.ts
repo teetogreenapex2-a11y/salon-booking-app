@@ -42,6 +42,13 @@ export async function POST(req: NextRequest) {
   });
 
   if (conflict) {
+    // Same person tapping twice: hand back the booking they already made.
+    if (
+      conflict.startsAt.getTime() === start.getTime() &&
+      conflict.customerEmail.toLowerCase() === String(customer.email).toLowerCase()
+    ) {
+      return NextResponse.json(conflict);
+    }
     return NextResponse.json({ error: "Slot no longer available" }, { status: 409 });
   }
 
