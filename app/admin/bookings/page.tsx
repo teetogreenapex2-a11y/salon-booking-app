@@ -99,6 +99,9 @@ export default async function BookingsPage() {
                     <span className={`status-pill status-${b.status.toLowerCase()}`}>
                       {b.status}
                     </span>
+                    {b.status === "CONFIRMED" && b.clientConfirmedAt && (
+                      <span className="subtle" style={{ fontSize: 12, marginLeft: 6 }}>✓ client confirmed</span>
+                    )}
                     {b.noShowFeeChargedAt && (
                       <div className="subtle" style={{ fontSize: 11, marginTop: 2 }}>
                         Fee charged

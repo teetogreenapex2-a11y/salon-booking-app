@@ -56,6 +56,13 @@ export default async function ManagePage({ params }: { params: { token: string }
     orderBy: { startsAt: "desc" },
     take: 40,
   });
+  const stamp = (d: Date) => d.toISOString().replace(/[-:]/g, "").replace(/\.\d{3}/, "");
+  const googleCalUrl =
+    "https://calendar.google.com/calendar/render?action=TEMPLATE" +
+    `&text=${encodeURIComponent(`${booking.service.name} at ${booking.business.name}`)}` +
+    `&dates=${stamp(booking.startsAt)}/${stamp(booking.endsAt)}` +
+    `&details=${encodeURIComponent(`With ${booking.stylist.name}`)}` +
+    (booking.business.address ? `&location=${encodeURIComponent(booking.business.address)}` : "");
   const now = Date.now();
   const toRow = (b: (typeof others)[number]) => ({
     id: b.id,
@@ -95,6 +102,8 @@ export default async function ManagePage({ params }: { params: { token: string }
         status={booking.status}
         state={state}
         cutoffHours={booking.business.cancelCutoffHours}
+        confirmed={!!booking.clientConfirmedAt}
+        googleCalUrl={googleCalUrl}
         previous={previous}
         future={future}
       />

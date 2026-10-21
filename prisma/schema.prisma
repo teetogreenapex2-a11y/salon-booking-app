@@ -428,6 +428,8 @@ model Booking {
   paidOutsideMethod String?
 
   reminderSentAt DateTime?
+  // Set when the customer taps "Confirm" on their appointment page.
+  clientConfirmedAt DateTime?
   reviewRequestedAt DateTime?
   // Total of gift card balance applied to this booking's bill.
   giftCardCents Int @default(0)

@@ -16,6 +16,8 @@ type Props = {
   dateLabel?: string;
   timeLabel?: string;
   previous?: { id: string; service: string; when: string; status: string }[];
+  confirmed?: boolean;
+  googleCalUrl?: string;
   future?: { id: string; service: string; when: string; status: string }[];
   status: string;
   state: "ok" | "closed" | "too_late";
@@ -43,6 +45,7 @@ function minutesToLabel(mins: number) {
 
 export default function ManageBooking(p: Props) {
   const [tab, setTab] = useState<"previous" | "current" | "future">("current");
+  const [confirmed, setConfirmed] = useState(!!p.confirmed);
   const [mode, setMode] = useState<"view" | "reschedule" | "confirmCancel" | "done">("view");
   const [doneText, setDoneText] = useState("");
   const [busy, setBusy] = useState(false);
@@ -113,6 +116,19 @@ export default function ManageBooking(p: Props) {
         setError(data.error || "Couldn't reschedule — please try again.");
         if (res.status === 409) loadSlots(weekOffset, dateIdx);
       }
+    } catch {
+      setError("Couldn't reach the server — please try again.");
+    }
+    setBusy(false);
+  }
+
+  async function confirmVisit() {
+    setBusy(true);
+    setError("");
+    try {
+      const res = await fetch(`/api/manage/${p.token}/confirm`, { method: "POST" });
+      if (res.ok) setConfirmed(true);
+      else setError("Couldn't confirm — please try again.");
     } catch {
       setError("Couldn't reach the server — please try again.");
     }
@@ -235,14 +251,16 @@ export default function ManageBooking(p: Props) {
             )}
           </div>
 
-          {p.status === "CONFIRMED" && (
-            <a
-              className="btn-ghost"
-              style={{ display: "block", textAlign: "center", marginTop: 14 }}
-              href={`/api/manage/${p.token}/calendar`}
-            >
-              Add to calendar
-            </a>
+          {p.status === "CONFIRMED" && p.state !== "closed" && mode === "view" && (
+            <div style={{ textAlign: "center", marginTop: 20 }}>
+              {confirmed ? (
+                <p className="name" style={{ margin: 0 }}>✓ You confirmed this appointment</p>
+              ) : (
+                <button className="btn-primary" onClick={confirmVisit} disabled={busy} style={{ minWidth: 200 }}>
+                  {busy ? "Confirming…" : "Confirm"}
+                </button>
+              )}
+            </div>
           )}
       {error && <p className="subtle" style={{ color: "#c62828", marginTop: 14 }}>{error}</p>}
 
@@ -264,6 +282,24 @@ export default function ManageBooking(p: Props) {
           {p.status === "CANCELLED" ? "This appointment was cancelled." : "This appointment can't be changed anymore."}{" "}
           <a href={`/${p.businessSlug}`} style={{ textDecoration: "underline" }}>Book a new one</a>
         </p>
+      )}
+
+      {mode === "view" && p.status === "CONFIRMED" && p.state !== "closed" && (
+        <div style={{ textAlign: "center", marginTop: 26 }}>
+          <p className="subtle" style={{ letterSpacing: "0.2em", fontSize: 12, textTransform: "uppercase", margin: "0 0 10px" }}>
+            Add to your calendar
+          </p>
+          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+            {p.googleCalUrl && (
+              <a className="btn-ghost" style={{ textAlign: "center" }} href={p.googleCalUrl} target="_blank" rel="noreferrer">
+                Google Calendar
+              </a>
+            )}
+            <a className="btn-ghost" style={{ textAlign: "center" }} href={`/api/manage/${p.token}/calendar`}>
+              Apple Calendar
+            </a>
+          </div>
+        </div>
       )}
 
       {mode === "confirmCancel" && (

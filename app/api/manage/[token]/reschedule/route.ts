@@ -52,7 +52,7 @@ export async function POST(req: NextRequest, { params }: { params: { token: stri
   const oldWhen = formatWhen(booking.startsAt, booking.business.timezone);
   const updated = await prisma.booking.update({
     where: { id: booking.id },
-    data: { startsAt: start, endsAt: end, reminderSentAt: null },
+    data: { startsAt: start, endsAt: end, reminderSentAt: null, clientConfirmedAt: null },
   });
   await syncBookingToGoogle(updated.id);
 
