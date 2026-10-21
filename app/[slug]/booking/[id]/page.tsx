@@ -1,3 +1,4 @@
+import { fmtInTz } from "@/lib/tz";
 import { prisma } from "@/lib/prisma";
 import { notFound } from "next/navigation";
 import { MapPin, Scissors } from "lucide-react";
@@ -53,7 +54,7 @@ export default async function BookingDetailsPage({
         <Row label="Status" value={STATUS_LABEL[booking.status] ?? booking.status} />
         <Row
           label="Date"
-          value={booking.startsAt.toLocaleDateString(undefined, {
+          value={fmtInTz(booking.startsAt, booking.business.timezone, {
             weekday: "long",
             month: "long",
             day: "numeric",
@@ -62,7 +63,7 @@ export default async function BookingDetailsPage({
         />
         <Row
           label="Time"
-          value={booking.startsAt.toLocaleTimeString(undefined, {
+          value={fmtInTz(booking.startsAt, booking.business.timezone, {
             hour: "numeric",
             minute: "2-digit",
           })}

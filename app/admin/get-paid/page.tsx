@@ -1,3 +1,4 @@
+import { fmtInTz } from "@/lib/tz";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { requireOwnerOrStylist } from "@/lib/access";
@@ -60,7 +61,7 @@ export default async function GetPaidPage() {
                 <p className="name" style={{ margin: 0 }}>{b.customerName}</p>
                 <p className="subtle" style={{ margin: "2px 0 0", fontSize: 12 }}>
                   {b.service.name} ·{" "}
-                  {b.startsAt.toLocaleString(undefined, {
+                  {fmtInTz(b.startsAt, access.business.timezone, {
                     month: "short",
                     day: "numeric",
                     hour: "numeric",

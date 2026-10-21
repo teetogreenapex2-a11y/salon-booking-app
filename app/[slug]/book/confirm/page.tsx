@@ -1,3 +1,4 @@
+import { fmtInTz } from "@/lib/tz";
 import { prisma } from "@/lib/prisma";
 import { notFound } from "next/navigation";
 import InstallTip from "@/components/InstallTip";
@@ -25,7 +26,7 @@ export default async function ConfirmPage({ searchParams }: { searchParams: { id
         <Row label="Stylist" value={booking.stylist.name} />
         <Row
           label="When"
-          value={booking.startsAt.toLocaleString(undefined, {
+          value={fmtInTz(booking.startsAt, booking.business.timezone, {
             weekday: "long",
             month: "long",
             day: "numeric",

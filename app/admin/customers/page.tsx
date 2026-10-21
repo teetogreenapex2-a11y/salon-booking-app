@@ -1,3 +1,4 @@
+import { fmtInTz } from "@/lib/tz";
 import { prisma } from "@/lib/prisma";
 import { requireOwner } from "@/lib/access";
 import Link from "next/link";
@@ -51,7 +52,7 @@ export default async function CustomersPage() {
                   {c.bookings[0] && (
                     <p className="subtle" style={{ margin: 0 }}>
                       Last visit:{" "}
-                      {c.bookings[0].startsAt.toLocaleDateString(undefined, {
+                      {fmtInTz(c.bookings[0].startsAt, business.timezone, {
                         month: "short",
                         day: "numeric",
                         year: "numeric",

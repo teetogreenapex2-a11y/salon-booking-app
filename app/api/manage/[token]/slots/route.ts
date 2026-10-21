@@ -1,3 +1,4 @@
+import { partsInTz } from "@/lib/tz";
 import { NextRequest, NextResponse } from "next/server";
 import { getOpenSlots } from "@/lib/availability";
 import { getEffectiveServiceInfo } from "@/lib/pricing";
@@ -23,7 +24,10 @@ export async function GET(req: NextRequest, { params }: { params: { token: strin
   // Never offer times that have already passed today.
   const date = new Date(dateParam);
   const now = new Date();
-  const sameDay = date.toDateString() === now.toDateString();
-  const nowMin = now.getHours() * 60 + now.getMinutes();
+  const tz = booking.business.timezone;
+  const dp = partsInTz(date, tz);
+  const np = partsInTz(now, tz);
+  const sameDay = dp.year === np.year && dp.month === np.month && dp.day === np.day;
+  const nowMin = np.minutesOfDay;
   return NextResponse.json({ slots: sameDay ? slots.filter((m) => m > nowMin) : slots });
 }

@@ -1,4 +1,5 @@
 import { prisma } from "./prisma";
+import { dayBoundsInTz, partsInTz } from "./tz";
 
 const SLOT_STEP_MIN = 15;
 
@@ -17,7 +18,12 @@ export async function getOpenSlots(
   durationMin: number,
   excludeBookingId?: string
 ) {
-  const dayOfWeek = date.getDay();
+  const biz = await prisma.stylist.findUnique({
+    where: { id: stylistId },
+    select: { business: { select: { timezone: true } } },
+  });
+  const tz = biz?.business?.timezone;
+  const { start: dayStart, end: dayEndExcl, dow: dayOfWeek } = dayBoundsInTz(date, tz);
 
   const windows = await prisma.availability.findMany({
     where: { stylistId, dayOfWeek },
@@ -25,24 +31,19 @@ export async function getOpenSlots(
 
   if (windows.length === 0) return [];
 
-  const dayStart = new Date(date);
-  dayStart.setHours(0, 0, 0, 0);
-  const dayEnd = new Date(date);
-  dayEnd.setHours(23, 59, 59, 999);
-
   const existingBookings = await prisma.booking.findMany({
     where: {
       stylistId,
       status: "CONFIRMED",
       ...(excludeBookingId ? { id: { not: excludeBookingId } } : {}),
-      startsAt: { gte: dayStart, lte: dayEnd },
+      startsAt: { gte: dayStart, lt: dayEndExcl },
     },
     select: { startsAt: true, endsAt: true },
   });
 
   const busy = existingBookings.map((b) => ({
-    start: b.startsAt.getHours() * 60 + b.startsAt.getMinutes(),
-    end: b.endsAt.getHours() * 60 + b.endsAt.getMinutes(),
+    start: partsInTz(b.startsAt, tz).minutesOfDay,
+    end: partsInTz(b.endsAt, tz).minutesOfDay || 24 * 60,
   }));
 
   const openStarts: number[] = [];

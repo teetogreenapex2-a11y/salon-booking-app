@@ -4,6 +4,7 @@ import Link from "next/link";
 import StylistFilter from "@/components/StylistFilter";
 import SetupChecklist from "@/components/admin/SetupChecklist";
 import { stylistSetupSteps } from "@/lib/setup";
+import { partsInTz, zonedToUtc, fmtInTz } from "@/lib/tz";
 
 export const dynamic = "force-dynamic";
 
@@ -58,18 +59,23 @@ export default async function AdminCalendar({
   const stylistSteps = access.role === "stylist" ? await stylistSetupSteps(access.stylist) : null;
 
   const dateParam = searchParams.date;
-  const day = dateParam ? new Date(dateParam + "T00:00:00") : new Date();
-  day.setHours(0, 0, 0, 0);
+  // All day math is in the salon's timezone (the server itself runs in UTC).
+  const tz = business.timezone;
+  const m = dateParam && /^\d{4}-\d{2}-\d{2}$/.test(dateParam) ? dateParam.split("-").map(Number) : null;
+  const todayParts = partsInTz(new Date(), tz);
+  const [dy, dm, dd] = m ?? [todayParts.year, todayParts.month, todayParts.day];
+  // "day" is a label-only date (noon UTC so it never slips a day).
+  const day = new Date(Date.UTC(dy, dm - 1, dd, 12));
   const dateForLinks = formatDateParam(day);
+  const todayParam = formatDateParam(new Date(Date.UTC(todayParts.year, todayParts.month - 1, todayParts.day, 12)));
 
-  const dayStart = new Date(day);
-  const dayEnd = new Date(day);
-  dayEnd.setDate(dayEnd.getDate() + 1);
+  const dayStart = zonedToUtc(dy, dm, dd, 0, tz);
+  const dayEnd = zonedToUtc(dy, dm, dd + 1, 0, tz);
 
   const prevDay = new Date(day);
-  prevDay.setDate(prevDay.getDate() - 1);
+  prevDay.setUTCDate(prevDay.getUTCDate() - 1);
   const nextDay = new Date(day);
-  nextDay.setDate(nextDay.getDate() + 1);
+  nextDay.setUTCDate(nextDay.getUTCDate() + 1);
 
   // A stylist account only ever sees their own column — forced here
   // server-side (not just hidden in the UI) so changing the URL's
@@ -131,11 +137,17 @@ export default async function AdminCalendar({
         />
       )}
 
-      <h1 className="display" style={{ fontSize: 26, marginBottom: 4 }}>
-        Calendar
-      </h1>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, marginBottom: 4 }}>
+        <h1 className="display" style={{ fontSize: 26, margin: 0 }}>
+          Calendar
+        </h1>
+        <a href="/admin/book" className="btn-primary" style={{ textDecoration: "none", padding: "9px 16px", fontSize: 14 }}>
+          + New booking
+        </a>
+      </div>
       <p className="subtle" style={{ marginBottom: 20 }}>
-        {day.toLocaleDateString(undefined, {
+        {day.toLocaleDateString("en-US", {
+          timeZone: "UTC",
           weekday: "long",
           month: "long",
           day: "numeric",
@@ -148,7 +160,7 @@ export default async function AdminCalendar({
           ←
         </Link>
         <Link
-          href={`/admin/calendar?date=${formatDateParam(new Date())}${stylistQuery}`}
+          href={`/admin/calendar?date=${todayParam}${stylistQuery}`}
           className="btn-primary"
           style={{ padding: "8px 16px", fontSize: 13 }}
         >
@@ -288,10 +300,8 @@ export default async function AdminCalendar({
               const colIndex = stylists.findIndex((s) => s.id === b.stylistId);
               if (colIndex === -1) return null;
 
-              const startMinutes =
-                (b.startsAt.getHours() - START_HOUR) * 60 + b.startsAt.getMinutes();
-              const endMinutes =
-                (b.endsAt.getHours() - START_HOUR) * 60 + b.endsAt.getMinutes();
+              const startMinutes = partsInTz(b.startsAt, tz).minutesOfDay - START_HOUR * 60;
+              const endMinutes = (partsInTz(b.endsAt, tz).minutesOfDay || 24 * 60) - START_HOUR * 60;
 
               const rowStart = Math.round(startMinutes / SLOT_MINUTES) + 2;
               const rowEnd = Math.round(endMinutes / SLOT_MINUTES) + 2;
@@ -302,10 +312,7 @@ export default async function AdminCalendar({
               return (
                 <div
                   key={b.id}
-                  title={`${b.customerName} — ${b.service.name} (${b.startsAt.toLocaleTimeString(
-                    undefined,
-                    { hour: "numeric", minute: "2-digit" }
-                  )})`}
+                  title={`${b.customerName} — ${b.service.name} (${fmtInTz(b.startsAt, tz, { hour: "numeric", minute: "2-digit" })})`}
                   style={{
                     gridColumn: colIndex + 2,
                     gridRow: `${Math.max(rowStart, 2)} / ${Math.min(rowEnd, TOTAL_SLOTS + 2)}`,

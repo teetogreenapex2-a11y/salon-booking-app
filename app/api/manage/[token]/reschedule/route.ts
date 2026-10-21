@@ -1,3 +1,4 @@
+import { partsInTz } from "@/lib/tz";
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getOpenSlots } from "@/lib/availability";
@@ -34,7 +35,7 @@ export async function POST(req: NextRequest, { params }: { params: { token: stri
 
   // The requested start must be one of the stylist's genuinely open times.
   const open = await getOpenSlots(booking.stylistId, start, durationMin, booking.id);
-  const startMin = start.getHours() * 60 + start.getMinutes();
+  const startMin = partsInTz(start, booking.business.timezone).minutesOfDay;
   const conflict = await prisma.booking.findFirst({
     where: {
       stylistId: booking.stylistId,

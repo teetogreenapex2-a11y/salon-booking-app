@@ -1,3 +1,4 @@
+import { fmtInTz } from "@/lib/tz";
 import { displayEmail } from "@/lib/placeholderEmail";
 import { prisma } from "@/lib/prisma";
 import { requireOwner } from "@/lib/access";
@@ -87,7 +88,7 @@ export default async function BookingsPage() {
                   <td>{b.service.name}</td>
                   <td>{b.stylist.name}</td>
                   <td>
-                    {b.startsAt.toLocaleString(undefined, {
+                    {fmtInTz(b.startsAt, business.timezone, {
                       month: "short",
                       day: "numeric",
                       hour: "numeric",

@@ -1,3 +1,4 @@
+import { fmtInTz } from "@/lib/tz";
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { sendSms } from "@/lib/sms";
@@ -33,7 +34,7 @@ export async function GET(req: NextRequest) {
   for (const booking of bookings) {
     const link = `https://${process.env.VERCEL_URL}/${booking.business.slug}/booking/${booking.id}`;
     const manageLink = manageUrl(await ensureManageToken(booking.id, booking.manageToken));
-    const when = booking.startsAt.toLocaleString(undefined, {
+    const when = fmtInTz(booking.startsAt, booking.business.timezone, {
       weekday: "short",
       month: "short",
       day: "numeric",

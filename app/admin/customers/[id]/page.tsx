@@ -1,3 +1,4 @@
+import { fmtInTz } from "@/lib/tz";
 import { prisma } from "@/lib/prisma";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -108,7 +109,7 @@ export default async function CustomerDetail({
                 <p className="name">{b.service.name}</p>
                 <p className="subtle" style={{ margin: "2px 0 0" }}>
                   with {b.stylist.name} ·{" "}
-                  {b.startsAt.toLocaleString(undefined, {
+                  {fmtInTz(b.startsAt, business.timezone, {
                     weekday: "short",
                     month: "short",
                     day: "numeric",

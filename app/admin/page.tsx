@@ -1,3 +1,4 @@
+import { fmtInTz } from "@/lib/tz";
 export const dynamic = "force-dynamic";
 import ShareLinkCard from "@/components/admin/ShareLinkCard";
 import { prisma } from "@/lib/prisma";
@@ -107,7 +108,7 @@ export default async function AdminDashboard({
                 </p>
                 <p className="subtle" style={{ margin: "2px 0 0" }}>
                   with {b.stylist.name} ·{" "}
-                  {b.startsAt.toLocaleString(undefined, {
+                  {fmtInTz(b.startsAt, business.timezone, {
                     weekday: "short",
                     month: "short",
                     day: "numeric",
