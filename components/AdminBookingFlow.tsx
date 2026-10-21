@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { Clock, ChevronLeft, ChevronRight } from "lucide-react";
 import CardOnFileStep from "./CardOnFileStep";
@@ -52,6 +52,7 @@ export default function AdminBookingFlow({
   const [slots, setSlots] = useState<number[]>([]);
   const [loadingSlots, setLoadingSlots] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const inFlight = useRef(false);
   const [pendingStartMin, setPendingStartMin] = useState<number | null>(null);
 
   const week = useMemo(() => buildWeek(weekOffset), [weekOffset]);
@@ -113,12 +114,17 @@ export default function AdminBookingFlow({
   async function submitBooking(customerId: string | null, startMinOverride?: number) {
     const startMin = startMinOverride ?? pendingStartMin;
     if (!service || !stylist || startMin === null || startMin === undefined) return;
+    // A double tap must not send the booking twice.
+    if (inFlight.current) return;
+    inFlight.current = true;
     setSubmitting(true);
     const date = week[dateIdx];
     const startsAt = new Date(date);
     startsAt.setHours(0, startMin, 0, 0);
 
-    const res = await fetch("/api/bookings", {
+    let res: Response;
+    try {
+      res = await fetch("/api/bookings", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -134,13 +140,24 @@ export default function AdminBookingFlow({
         customerId: customerId ?? customer.id,
       }),
     });
-
-    setSubmitting(false);
+    } catch {
+      inFlight.current = false;
+      setSubmitting(false);
+      alert("Couldn't reach the server. Check your connection and try again.");
+      return;
+    }
 
     if (res.ok) {
       router.push(afterBookingHref ?? `/admin/customers/${customer.id}?booked=1`);
+      return; // keep the button locked while the page changes
     } else {
-      alert("That slot was just booked — pick another time.");
+      inFlight.current = false;
+      setSubmitting(false);
+      alert(
+        res.status === 409
+          ? "That slot was just booked — pick another time."
+          : "Something went wrong and the booking wasn't saved. Please try again."
+      );
       setStep("calendar");
       setPendingStartMin(null);
       loadSlots(dateIdx, weekOffset, stylist, service);

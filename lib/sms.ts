@@ -24,6 +24,8 @@ export async function sendSms(to: string, body: string) {
       "Content-Type": "application/x-www-form-urlencoded",
     },
     body: new URLSearchParams({ To: formatted, From: from, Body: body }),
+    // Never let a slow provider hold up the customer's booking.
+    signal: AbortSignal.timeout(8000),
   });
 
   if (!res.ok) {
