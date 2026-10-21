@@ -5,7 +5,27 @@ import { changeStatus, formatWhen } from "@/lib/manage";
 import ManageBooking from "@/components/ManageBooking";
 
 export const dynamic = "force-dynamic";
-export const metadata = { title: "Your appointment", robots: { index: false, follow: false } };
+
+// What shows in the text-message link preview card: the salon's name, the
+// appointment time, and the salon's own picture (cover, then logo, then ours).
+export async function generateMetadata({ params }: { params: { token: string } }) {
+  const base = (process.env.APP_URL || "https://www.hairsalonix.com").replace(/\/$/, "");
+  const booking = await bookingByToken(params.token);
+  if (!booking) return { title: "Your appointment", robots: { index: false, follow: false } };
+  const b = booking.business;
+  const when = formatWhen(booking.startsAt, b.timezone);
+  const abs = (u: string) => (u.startsWith("http") ? u : `${base}${u.startsWith("/") ? "" : "/"}${u}`);
+  const image = abs(b.coverUrl || b.logoUrl || "/icon-512.png");
+  const title = `Your appointment at ${b.name}`;
+  const description = `${booking.service.name} with ${booking.stylist.name} · ${when}. Tap to see details, reschedule or add to calendar.`;
+  return {
+    title,
+    description,
+    robots: { index: false, follow: false },
+    openGraph: { title, description, siteName: b.name, type: "website", images: [{ url: image }] },
+    twitter: { card: "summary_large_image", title, description, images: [image] },
+  };
+}
 
 export default async function ManagePage({ params }: { params: { token: string } }) {
   const booking = await bookingByToken(params.token);
