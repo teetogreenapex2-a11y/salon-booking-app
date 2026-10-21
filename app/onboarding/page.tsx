@@ -4,6 +4,7 @@ import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import JoinSalonForm from "@/components/JoinSalonForm";
 import OnboardingForm from "@/components/OnboardingForm";
+import AdminLogoutButton from "@/components/AdminLogoutButton";
 
 export const dynamic = "force-dynamic";
 
@@ -44,6 +45,7 @@ export default async function OnboardingPage() {
   if (pending) {
     return (
       <main className="page" style={{ maxWidth: 480 }}>
+        <div style={{ marginBottom: 16 }}><AdminLogoutButton /></div>
         <h1 className="display title">Waiting for approval</h1>
         <p className="tagline">
           You asked to join {pending.business.name}. Once the owner approves you, sign in again and you'll go
@@ -55,6 +57,12 @@ export default async function OnboardingPage() {
 
   return (
     <main className="page" style={{ maxWidth: 480 }}>
+      <div className="card" style={{ marginBottom: 16, display: "flex", gap: 12, alignItems: "center", justifyContent: "space-between", flexWrap: "wrap" }}>
+        <p className="subtle" style={{ margin: 0, fontSize: 13 }}>
+          Signed in as <strong>{session.user!.email}</strong>. Already have a business under a different email?
+        </p>
+        <AdminLogoutButton />
+      </div>
       <h1 className="display title">Set up your business</h1>
       <p className="tagline">Takes about a minute. You can change any of this later.</p>
       <OnboardingForm />
