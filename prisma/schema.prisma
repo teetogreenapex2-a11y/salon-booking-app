@@ -84,6 +84,7 @@ model Business {
   // email after a visit asking for a review. Clear it to stop.
   reviewUrl    String?
   address      String?
+  phone        String?
   instagram    String?
   timezone     String   @default("America/New_York")
   createdAt    DateTime @default(now())

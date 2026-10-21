@@ -10,6 +10,13 @@ type Props = {
   serviceName: string;
   stylistName: string;
   whenLabel: string;
+  businessAddress?: string | null;
+  businessPhone?: string | null;
+  firstName?: string;
+  dateLabel?: string;
+  timeLabel?: string;
+  previous?: { id: string; service: string; when: string; status: string }[];
+  future?: { id: string; service: string; when: string; status: string }[];
   status: string;
   state: "ok" | "closed" | "too_late";
   cutoffHours: number;
@@ -35,6 +42,7 @@ function minutesToLabel(mins: number) {
 }
 
 export default function ManageBooking(p: Props) {
+  const [tab, setTab] = useState<"previous" | "current" | "future">("current");
   const [mode, setMode] = useState<"view" | "reschedule" | "confirmCancel" | "done">("view");
   const [doneText, setDoneText] = useState("");
   const [busy, setBusy] = useState(false);
@@ -141,15 +149,101 @@ export default function ManageBooking(p: Props) {
     );
   }
 
+  const statusLabel =
+    p.status === "CONFIRMED" ? "Approved" : p.status === "CANCELLED" ? "Cancelled" : p.status === "COMPLETED" ? "Completed" : p.status;
+  const mapUrl = p.businessAddress
+    ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(p.businessAddress)}`
+    : null;
+
+  const tabBtn = (key: "previous" | "current" | "future", label: string) => (
+    <button
+      key={key}
+      onClick={() => setTab(key)}
+      style={{
+        background: "none",
+        border: "none",
+        borderBottom: tab === key ? "3px solid var(--berry)" : "3px solid transparent",
+        padding: "10px 14px",
+        fontSize: 16,
+        fontWeight: tab === key ? 600 : 400,
+        cursor: "pointer",
+        color: "inherit",
+      }}
+    >
+      {label}
+    </button>
+  );
+
+  const list = (items: NonNullable<Props["previous"]>, empty: string) =>
+    items.length === 0 ? (
+      <p className="subtle" style={{ textAlign: "center", marginTop: 20 }}>{empty}</p>
+    ) : (
+      <div className="card static" style={{ flexDirection: "column", alignItems: "stretch", gap: 0 }}>
+        {items.map((it) => (
+          <Row key={it.id} label={it.when} value={it.status === "CANCELLED" ? `${it.service} (cancelled)` : it.service} />
+        ))}
+      </div>
+    );
+
   return (
     <div>
-      <div className="card static" style={{ flexDirection: "column", alignItems: "stretch", gap: 0 }}>
-        <Row label="When" value={p.whenLabel} />
-        <Row label="Service" value={p.serviceName} />
-        <Row label="Stylist" value={p.stylistName} />
-        <Row label="Status" value={p.status === "CONFIRMED" ? "Confirmed" : p.status === "CANCELLED" ? "Cancelled" : p.status === "COMPLETED" ? "Completed" : p.status} />
+      <div style={{ display: "flex", justifyContent: "center", gap: 8, margin: "4px 0 18px" }}>
+        {tabBtn("previous", "Previous")}
+        {tabBtn("current", "Current")}
+        {tabBtn("future", "Future")}
       </div>
 
+      {tab === "previous" && list(p.previous ?? [], "No previous visits yet.")}
+      {tab === "future" && list(p.future ?? [], "No other upcoming visits.")}
+
+      {tab === "current" && (
+        <>
+          <div style={{ textAlign: "center", margin: "0 0 18px" }}>
+            <p className="display" style={{ fontSize: 22, margin: 0 }}>
+              {p.firstName ? `Hi ${p.firstName}!` : "Hi there!"}
+            </p>
+            <p className="subtle" style={{ margin: "4px 0 0" }}>
+              {p.status === "CANCELLED" ? "This appointment was cancelled." : "Looking forward to seeing you. Here are your details."}
+            </p>
+          </div>
+
+          <div className="card static" style={{ flexDirection: "column", alignItems: "stretch", gap: 0 }}>
+            <Row label="Status" value={statusLabel} />
+            <Row label="Date" value={p.dateLabel || p.whenLabel} />
+            <Row label="Time" value={p.timeLabel || ""} />
+            <Row label="Service" value={p.serviceName} />
+            <Row label="Stylist" value={p.stylistName} />
+            {p.businessAddress && (
+              <Row
+                label="Location"
+                value={
+                  <a href={mapUrl!} target="_blank" rel="noreferrer" style={{ textDecoration: "underline" }}>
+                    {p.businessAddress}
+                  </a>
+                }
+              />
+            )}
+            {p.businessPhone && (
+              <Row
+                label="Phone"
+                value={
+                  <a href={`tel:${p.businessPhone.replace(/[^0-9+]/g, "")}`} style={{ textDecoration: "underline" }}>
+                    {p.businessPhone}
+                  </a>
+                }
+              />
+            )}
+          </div>
+
+          {p.status === "CONFIRMED" && (
+            <a
+              className="btn-ghost"
+              style={{ display: "block", textAlign: "center", marginTop: 14 }}
+              href={`/api/manage/${p.token}/calendar`}
+            >
+              Add to calendar
+            </a>
+          )}
       {error && <p className="subtle" style={{ color: "#c62828", marginTop: 14 }}>{error}</p>}
 
       {mode === "view" && p.state === "ok" && (
@@ -229,11 +323,13 @@ export default function ManageBooking(p: Props) {
           )}
         </div>
       )}
+        </>
+      )}
     </div>
   );
 }
 
-function Row({ label, value }: { label: string; value: string }) {
+function Row({ label, value }: { label: string; value: React.ReactNode }) {
   return (
     <div
       className="row"

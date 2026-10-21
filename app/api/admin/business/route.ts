@@ -12,7 +12,7 @@ export async function PUT(req: NextRequest) {
   }
 
   const body = await req.json();
-  const { name, slug, tagline, address, instagram, timezone, noShowFeeCents, cancelCutoffHours, listed, reviewUrl } = body;
+  const { name, slug, tagline, address, phone, instagram, timezone, noShowFeeCents, cancelCutoffHours, listed, reviewUrl } = body;
   const accent = "accentColor" in body ? cleanAccent(body.accentColor) : undefined;
   if ("accentColor" in body && accent === undefined) {
     return NextResponse.json({ error: "Pick a valid color" }, { status: 400 });
@@ -63,6 +63,7 @@ export async function PUT(req: NextRequest) {
       name,
       tagline,
       address,
+      ...("phone" in body ? { phone: typeof phone === "string" && phone.trim() ? phone.trim().slice(0, 40) : null } : {}),
       instagram,
       timezone,
       ...(cleanSlug ? { slug: cleanSlug } : {}),

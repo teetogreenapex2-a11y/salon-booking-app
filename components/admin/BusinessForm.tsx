@@ -10,6 +10,7 @@ type Business = {
   slug: string;
   tagline: string | null;
   address: string | null;
+  phone?: string | null;
   instagram: string | null;
   timezone: string;
   noShowFeeCents: number;
@@ -109,6 +110,7 @@ export default function BusinessForm({ business }: { business: Business }) {
         slug: form.slug,
         tagline: form.tagline,
         address: form.address,
+        phone: form.phone ?? null,
         instagram: form.instagram,
         timezone: form.timezone,
         noShowFeeCents,
@@ -281,6 +283,12 @@ export default function BusinessForm({ business }: { business: Business }) {
           placeholder="Address"
           value={form.address ?? ""}
           onChange={(e) => setForm({ ...form, address: e.target.value })}
+        />
+        <input
+          placeholder="Salon phone (shown on customers' appointment page)"
+          type="tel"
+          value={form.phone ?? ""}
+          onChange={(e) => setForm({ ...form, phone: e.target.value })}
         />
         <input
           placeholder="Instagram handle"
