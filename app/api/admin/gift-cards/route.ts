@@ -31,7 +31,7 @@ export async function POST(req: NextRequest) {
   const to = String(b.recipientEmail || "").trim();
   if (/^\S+@\S+\.\S+$/.test(to)) {
     const from = card.purchaserName ? ` from ${esc(card.purchaserName)}` : "";
-    sendEmail(
+    await sendEmail(
       to,
       `Your ${business.name} gift card`,
       `<p>Hi${card.recipientName ? " " + esc(card.recipientName) : ""},</p>

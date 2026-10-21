@@ -59,7 +59,7 @@ export async function POST(req: NextRequest, { params }: { params: { token: stri
   const when = formatWhen(start, booking.business.timezone);
   const link = manageUrl(params.token, req.headers.get("origin") || undefined);
 
-  sendEmail(
+  await sendEmail(
     booking.customerEmail,
     `Your appointment with ${booking.business.name} was rescheduled`,
     `<p>Hi ${booking.customerName},</p>
@@ -68,7 +68,7 @@ export async function POST(req: NextRequest, { params }: { params: { token: stri
   ).catch((e) => console.error("Reschedule email failed", e));
 
   if (booking.stylist.email) {
-    sendEmail(
+    await sendEmail(
       booking.stylist.email,
       `${booking.customerName} rescheduled`,
       `<p>${booking.customerName} moved their ${booking.service.name} from ${oldWhen} to <strong>${when}</strong>.</p>`

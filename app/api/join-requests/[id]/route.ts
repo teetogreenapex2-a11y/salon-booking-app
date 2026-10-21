@@ -23,7 +23,7 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
     await prisma.stylist.create({ data: { businessId: business.id, name: jr.name, email: jr.email } });
     await prisma.joinRequest.deleteMany({ where: { email: jr.email } });
     await syncStylistSubscriptionQuantity(business.id);
-    sendEmail(
+    await sendEmail(
       jr.email,
       `You're in at ${business.name}`,
       `<p>Hi ${jr.name.replace(/</g, "")},</p><p>${business.name} approved you. <a href="${base}/login">Sign in</a> to set up your hours and services.</p>`

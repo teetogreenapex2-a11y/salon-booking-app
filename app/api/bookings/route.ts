@@ -110,7 +110,7 @@ export async function POST(req: NextRequest) {
 
   const phone = customer.phone || customerRecord?.phone;
   if (phone && smsConsent) {
-    sendSms(phone, `Hi ${(customer.name || "").trim().split(/\s+/)[0] || "there"}! You're booked at ${business.name} for ${when}. See details, reschedule or add to calendar: ${manageLink} Msgs: 1 confirmation + 1 reminder. Msg & data rates may apply. Reply STOP to cancel, HELP for help.`).catch((err) =>
+    await sendSms(phone, `Hi ${(customer.name || "").trim().split(/\s+/)[0] || "there"}! You're booked at ${business.name} for ${when}. See details, reschedule or add to calendar: ${manageLink} Msgs: 1 confirmation + 1 reminder. Msg & data rates may apply. Reply STOP to cancel, HELP for help.`).catch((err) =>
       console.error("Booking confirmation SMS failed", err)
     );
   }
@@ -127,7 +127,7 @@ export async function POST(req: NextRequest) {
       )
     : "";
 
-  sendEmail(
+  await sendEmail(
     customer.email,
     `You're booked with ${business.name}`,
     `

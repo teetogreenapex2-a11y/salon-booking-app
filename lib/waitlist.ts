@@ -33,7 +33,7 @@ export async function notifyWaitlist(bookingId: string) {
     for (const w of waiting) {
       await prisma.waitlistEntry.update({ where: { id: w.id }, data: { status: "NOTIFIED", notifiedAt: new Date() } });
       if (isPlaceholderEmail(w.email)) continue;
-      sendEmail(
+      await sendEmail(
         w.email,
         `A spot opened up at ${booking.business.name}`,
         `<p>Hi ${esc(w.name)},</p>

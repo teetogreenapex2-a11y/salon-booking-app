@@ -59,7 +59,7 @@ export async function POST(req: NextRequest) {
   });
 
   const origin = req.headers.get("origin") || `https://${process.env.VERCEL_URL}`;
-  sendEmail(
+  await sendEmail(
     email,
     `You've been added as a co-owner of ${ctx.business.name}`,
     `

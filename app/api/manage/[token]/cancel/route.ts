@@ -27,7 +27,7 @@ export async function POST(_req: NextRequest, { params }: { params: { token: str
 
   const when = formatWhen(booking.startsAt, booking.business.timezone);
 
-  sendEmail(
+  await sendEmail(
     booking.customerEmail,
     `Your appointment with ${booking.business.name} was cancelled`,
     `<p>Hi ${booking.customerName},</p>
@@ -35,7 +35,7 @@ export async function POST(_req: NextRequest, { params }: { params: { token: str
   ).catch((e) => console.error("Cancel email failed", e));
 
   if (booking.stylist.email) {
-    sendEmail(
+    await sendEmail(
       booking.stylist.email,
       `${booking.customerName} cancelled`,
       `<p>${booking.customerName} cancelled their ${booking.service.name} on <strong>${when}</strong>. That time is open again.</p>`

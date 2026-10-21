@@ -38,7 +38,7 @@ export async function POST(req: NextRequest) {
   });
 
   if (business.owner?.email) {
-    sendEmail(
+    await sendEmail(
       business.owner.email,
       `${name} asked to join ${business.name}`,
       `<p><strong>${esc(name)}</strong> (${esc(email)}) asked to join your salon on Hairsalonix.</p>
