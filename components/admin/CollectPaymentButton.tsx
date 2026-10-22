@@ -78,8 +78,19 @@ export default function CollectPaymentButton({
 
   if (paidMethod) {
     return (
-      <span className="subtle" style={{ fontSize: 11 }}>
-        Paid · {paidMethod}{" "}
+      <span style={{ fontSize: 11, display: "inline-flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
+        <span
+          style={{
+            background: "#1b7a3d",
+            color: "#fff",
+            fontWeight: 700,
+            letterSpacing: "0.04em",
+            borderRadius: 999,
+            padding: "3px 10px",
+          }}
+        >
+          ✓ PAID · {paidMethod}
+        </span>
         <button
           className="btn-ghost"
           style={{ padding: "2px 8px", fontSize: 11 }}
@@ -94,9 +105,26 @@ export default function CollectPaymentButton({
 
   if (!open) {
     return (
-      <button className="btn-ghost" style={{ padding: "6px 12px", fontSize: 12 }} onClick={() => setOpen(true)}>
-        Collect payment
-      </button>
+      <div style={{ display: "flex", flexDirection: "column", gap: 6, alignItems: "flex-start" }}>
+        <span className="subtle" style={{ fontSize: 11 }}>Paid with (one tap):</span>
+        <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+          {METHODS.map((m) => (
+            <button
+              key={m}
+              className="btn-ghost"
+              style={{ padding: "6px 10px", fontSize: 12 }}
+              onClick={() => send({ method: m })}
+              disabled={busy}
+            >
+              {m}
+            </button>
+          ))}
+          <button className="btn-ghost" style={{ padding: "6px 10px", fontSize: 12 }} onClick={() => setOpen(true)} disabled={busy}>
+            More…
+          </button>
+        </div>
+        {error && <span style={{ color: "#b00020", fontSize: 12 }}>{error}</span>}
+      </div>
     );
   }
 

@@ -99,6 +99,21 @@ export default async function BookingsPage() {
                     <span className={`status-pill status-${b.status.toLowerCase()}`}>
                       {b.status}
                     </span>
+                    {b.paidOutsideAt && (
+                      <span
+                        style={{
+                          background: "#1b7a3d",
+                          color: "#fff",
+                          fontSize: 11,
+                          fontWeight: 700,
+                          borderRadius: 999,
+                          padding: "2px 8px",
+                          marginLeft: 6,
+                        }}
+                      >
+                        PAID
+                      </span>
+                    )}
                     {b.status === "CONFIRMED" && b.clientConfirmedAt && (
                       <span className="subtle" style={{ fontSize: 12, marginLeft: 6 }}>✓ client confirmed</span>
                     )}

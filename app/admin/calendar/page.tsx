@@ -264,8 +264,9 @@ export default async function AdminCalendar({
                   style={{
                     gridColumn: 1,
                     gridRow: `${rowStart} / ${rowStart + SLOTS_PER_HOUR}`,
-                    fontSize: 11,
-                    color: "rgba(36,28,31,0.5)",
+                    fontSize: 12,
+                    fontWeight: 600,
+                    color: "#73343A", // merlot
                     borderTop: "1px solid rgba(36,28,31,0.08)",
                     paddingTop: 2,
                     textAlign: "right",
@@ -336,6 +337,24 @@ export default async function AdminCalendar({
                       textOverflow: "ellipsis",
                     }}
                   >
+                    {b.paidOutsideAt && (
+                      <span
+                        title={`Paid${b.paidOutsideMethod ? ` · ${b.paidOutsideMethod}` : ""}`}
+                        style={{
+                          background: "#1b7a3d",
+                          color: "#fff",
+                          fontSize: 9,
+                          fontWeight: 700,
+                          letterSpacing: "0.04em",
+                          borderRadius: 3,
+                          padding: "1px 4px",
+                          marginRight: 4,
+                          verticalAlign: "1px",
+                        }}
+                      >
+                        PAID
+                      </span>
+                    )}
                     {b.customerName}
                   </div>
                   <div
