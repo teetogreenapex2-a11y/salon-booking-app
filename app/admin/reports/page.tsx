@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { requireOwnerOrStylist } from "@/lib/access";
 import Link from "next/link";
+import { partsInTz, zonedToUtc } from "@/lib/tz";
 
 export const dynamic = "force-dynamic";
 
@@ -16,6 +17,8 @@ type StylistRow = {
   name: string;
   completed: number;
   revenueCents: number;
+  collectedCents: number;
+  byMethod: Record<string, number>;
   noShows: number;
   cancelled: number;
 };
@@ -31,7 +34,7 @@ async function statsForRange(businessId: string, start: Date, end: Date, stylist
 
   const stats = new Map<string, StylistRow>();
   for (const s of stylists) {
-    stats.set(s.id, { name: s.name, completed: 0, revenueCents: 0, noShows: 0, cancelled: 0 });
+    stats.set(s.id, { name: s.name, completed: 0, revenueCents: 0, collectedCents: 0, byMethod: {}, noShows: 0, cancelled: 0 });
   }
 
   for (const b of bookings) {
@@ -39,7 +42,16 @@ async function statsForRange(businessId: string, start: Date, end: Date, stylist
     if (!entry) continue;
     if (b.status === "CONFIRMED" || b.status === "COMPLETED") {
       entry.completed += 1;
-      entry.revenueCents += b.priceCents || b.service.priceCents;
+      const price = b.priceCents || b.service.priceCents;
+      entry.revenueCents += price;
+      // "Collected" = marked paid (Venmo, Cash App, Zelle, cash, gift card…).
+      if (b.paidOutsideAt) {
+        entry.collectedCents += price;
+        const method = b.paidOutsideMethod || "Other";
+        const gift = method !== "Gift card" ? Math.min(b.giftCardCents || 0, price) : 0;
+        if (gift > 0) entry.byMethod["Gift card"] = (entry.byMethod["Gift card"] || 0) + gift;
+        entry.byMethod[method] = (entry.byMethod[method] || 0) + (price - gift);
+      }
     } else if (b.status === "NO_SHOW") {
       entry.noShows += 1;
     } else if (b.status === "CANCELLED") {
@@ -120,6 +132,10 @@ function RetailTable({ rows }: { rows: RetailRow[] }) {
 function StatsTable({ rows }: { rows: StylistRow[] }) {
   const totalRevenue = rows.reduce((sum, r) => sum + r.revenueCents, 0);
   const totalBookings = rows.reduce((sum, r) => sum + r.completed, 0);
+  const totalCollected = rows.reduce((sum, r) => sum + r.collectedCents, 0);
+  const methodTotals: Record<string, number> = {};
+  for (const r of rows) for (const [m, c] of Object.entries(r.byMethod)) methodTotals[m] = (methodTotals[m] || 0) + c;
+  const methodList = Object.entries(methodTotals).sort((a, b) => b[1] - a[1]);
 
   return (
     <>
@@ -129,10 +145,23 @@ function StatsTable({ rows }: { rows: StylistRow[] }) {
           <span className="subtle">Total revenue</span>
         </div>
         <div className="stat-card">
+          <span className="stat-number">{formatCents(totalCollected)}</span>
+          <span className="subtle">Collected (paid)</span>
+        </div>
+        <div className="stat-card">
+          <span className="stat-number">{formatCents(totalRevenue - totalCollected)}</span>
+          <span className="subtle">Unpaid</span>
+        </div>
+        <div className="stat-card">
           <span className="stat-number">{totalBookings}</span>
           <span className="subtle">Bookings</span>
         </div>
       </div>
+      {methodList.length > 0 && (
+        <p className="subtle" style={{ marginBottom: 16 }}>
+          Paid by: {methodList.map(([m, c]) => `${m} ${formatCents(c)}`).join(" · ")}
+        </p>
+      )}
 
       {rows.length === 0 ? (
         <p className="subtle">No active stylists.</p>
@@ -143,6 +172,7 @@ function StatsTable({ rows }: { rows: StylistRow[] }) {
               <th>Stylist</th>
               <th>Bookings</th>
               <th>Revenue</th>
+              <th>Collected</th>
               <th>No-shows</th>
               <th>Cancelled</th>
             </tr>
@@ -153,6 +183,7 @@ function StatsTable({ rows }: { rows: StylistRow[] }) {
                 <td>{r.name}</td>
                 <td>{r.completed}</td>
                 <td>{formatCents(r.revenueCents)}</td>
+                <td>{formatCents(r.collectedCents)}</td>
                 <td style={r.noShows > 0 ? { color: "#b3261e" } : undefined}>{r.noShows}</td>
                 <td>{r.cancelled}</td>
               </tr>
@@ -172,9 +203,12 @@ export default async function AdminReports({
   const access = await requireOwnerOrStylist();
   const business = access.business!;
 
+  // Month and year boundaries are the salon's, not the server's (UTC).
+  const tz = business.timezone;
   const now = new Date();
-  let year = now.getFullYear();
-  let monthIndex = now.getMonth();
+  const np = partsInTz(now, tz);
+  let year = np.year;
+  let monthIndex = np.month - 1;
   if (searchParams.month) {
     const [y, m] = searchParams.month.split("-").map(Number);
     if (y && m) {
@@ -182,16 +216,21 @@ export default async function AdminReports({
       monthIndex = m - 1;
     }
   }
+  const at = (y: number, m0: number) => zonedToUtc(y, m0 + 1, 1, 0, tz); // m0 may be -1 or 12; Date.UTC normalizes below
+  const norm = (y: number, m0: number) => {
+    const d = new Date(Date.UTC(y, m0, 1));
+    return at(d.getUTCFullYear(), d.getUTCMonth());
+  };
 
-  const monthStart = new Date(year, monthIndex, 1);
-  const monthEnd = new Date(year, monthIndex + 1, 1);
-  const prevMonth = new Date(year, monthIndex - 1, 1);
-  const nextMonth = new Date(year, monthIndex + 1, 1);
+  const monthStart = norm(year, monthIndex);
+  const monthEnd = norm(year, monthIndex + 1);
+  const prevMonth = new Date(Date.UTC(year, monthIndex - 1, 1, 12));
+  const nextMonth = new Date(Date.UTC(year, monthIndex + 1, 1, 12));
 
-  const mtdStart = new Date(now.getFullYear(), now.getMonth(), 1);
-  const mtdEnd = new Date(now.getFullYear(), now.getMonth() + 1, 1);
-  const ytdStart = new Date(now.getFullYear(), 0, 1);
-  const ytdEnd = new Date(now.getFullYear() + 1, 0, 1);
+  const mtdStart = norm(np.year, np.month - 1);
+  const mtdEnd = norm(np.year, np.month);
+  const ytdStart = norm(np.year, 0);
+  const ytdEnd = norm(np.year + 1, 0);
 
   // A stylist account only ever sees their own row in every table below —
   // forced here server-side, not just in how the table is rendered.
@@ -234,7 +273,7 @@ export default async function AdminReports({
         Month to date
       </h2>
       <p className="subtle" style={{ marginBottom: 14 }}>
-        {mtdStart.toLocaleDateString(undefined, { month: "long", day: "numeric" })} – today
+        {mtdStart.toLocaleDateString("en-US", { timeZone: tz, month: "long", day: "numeric" })} – today
       </p>
       <div style={{ marginBottom: 36 }}>
         <StatsTable rows={mtdRows} />
@@ -244,7 +283,7 @@ export default async function AdminReports({
         Year to date
       </h2>
       <p className="subtle" style={{ marginBottom: 14 }}>
-        Jan 1 – today, {now.getFullYear()}
+        Jan 1 – today, {np.year}
       </p>
       <div style={{ marginBottom: 36 }}>
         <StatsTable rows={ytdRows} />
@@ -258,7 +297,7 @@ export default async function AdminReports({
           ←
         </Link>
         <span style={{ fontWeight: 600, minWidth: 160, textAlign: "center" }}>
-          {monthStart.toLocaleDateString(undefined, { month: "long", year: "numeric" })}
+          {monthStart.toLocaleDateString("en-US", { timeZone: tz, month: "long", year: "numeric" })}
         </span>
         <Link href={`/admin/reports?month=${monthParam(nextMonth)}`} className="icon-btn">
           →
@@ -279,7 +318,7 @@ export default async function AdminReports({
           </div>
 
           <h2 className="display" style={{ fontSize: 18, marginBottom: 2 }}>
-            Retail products: {monthStart.toLocaleDateString(undefined, { month: "long", year: "numeric" })}
+            Retail products: {monthStart.toLocaleDateString("en-US", { timeZone: tz, month: "long", year: "numeric" })}
           </h2>
           <div style={{ margin: "14px 0 36px" }}>
             <RetailTable rows={retailMonth as RetailRow[]} />
