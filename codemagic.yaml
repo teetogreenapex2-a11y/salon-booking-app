@@ -26,11 +26,6 @@ workflows:
         script: |
           rm -rf ios
           npx cap add ios
-      - name: iPhone only (no iPad build)
-        script: |
-          # Keeps the app iPhone-only so App Store Connect doesn't ask for iPad screenshots.
-          sed -i '' 's/TARGETED_DEVICE_FAMILY = "1,2";/TARGETED_DEVICE_FAMILY = 1;/g' ios/App/App.xcodeproj/project.pbxproj
-          grep -c "TARGETED_DEVICE_FAMILY = 1;" ios/App/App.xcodeproj/project.pbxproj || true
       - name: Add privacy purpose strings to Info.plist
         script: |
           # Apple rejects builds that reference camera / photos without a
