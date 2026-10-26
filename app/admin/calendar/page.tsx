@@ -5,6 +5,7 @@ import StylistFilter from "@/components/StylistFilter";
 import SetupChecklist from "@/components/admin/SetupChecklist";
 import { stylistSetupSteps } from "@/lib/setup";
 import { partsInTz, zonedToUtc, fmtInTz } from "@/lib/tz";
+import { WeekGrid, AgendaList, type WeekItem } from "@/components/admin/CalendarWeekViews";
 
 export const dynamic = "force-dynamic";
 
@@ -49,7 +50,7 @@ function timeLabel(hour: number) {
 export default async function AdminCalendar({
   searchParams,
 }: {
-  searchParams: { date?: string; stylist?: string };
+  searchParams: { date?: string; stylist?: string; view?: string };
 }) {
   const access = await requireOwnerOrStylist();
   const business = access.business!;
@@ -72,10 +73,21 @@ export default async function AdminCalendar({
   const dayStart = zonedToUtc(dy, dm, dd, 0, tz);
   const dayEnd = zonedToUtc(dy, dm, dd + 1, 0, tz);
 
+  // Day (default), Week (one stylist, seven columns) or List (this week).
+  const view: "day" | "week" | "list" =
+    searchParams.view === "week" || searchParams.view === "list" ? searchParams.view : "day";
+  const stepDays = view === "day" ? 1 : 7;
+  const weekStartDate = new Date(Date.UTC(dy, dm - 1, dd - day.getUTCDay(), 12)); // weeks start on Sunday
+  const wy = weekStartDate.getUTCFullYear();
+  const wm = weekStartDate.getUTCMonth() + 1;
+  const wd = weekStartDate.getUTCDate();
+  const rangeStart = view === "day" ? dayStart : zonedToUtc(wy, wm, wd, 0, tz);
+  const rangeEnd = view === "day" ? dayEnd : zonedToUtc(wy, wm, wd + 7, 0, tz);
+
   const prevDay = new Date(day);
-  prevDay.setUTCDate(prevDay.getUTCDate() - 1);
+  prevDay.setUTCDate(prevDay.getUTCDate() - stepDays);
   const nextDay = new Date(day);
-  nextDay.setUTCDate(nextDay.getUTCDate() + 1);
+  nextDay.setUTCDate(nextDay.getUTCDate() + stepDays);
 
   // A stylist account only ever sees their own column — forced here
   // server-side (not just hidden in the UI) so changing the URL's
@@ -88,31 +100,82 @@ export default async function AdminCalendar({
         : null;
   const stylistQuery = selectedStylistId ? `&stylist=${selectedStylistId}` : "";
 
-  const [allStylists, bookings] = await Promise.all([
-    // A stylist account never needs (or should see) the rest of the
-    // team's names in the filter dropdown — just skip that query and use
-    // their own record directly.
+  // A stylist account never needs (or should see) the rest of the
+  // team's names in the filter dropdown — just skip that query and use
+  // their own record directly.
+  const allStylists =
     access.role === "stylist"
-      ? Promise.resolve([access.stylist])
-      : prisma.stylist.findMany({
+      ? [access.stylist]
+      : await prisma.stylist.findMany({
           where: { businessId: business.id, active: true },
           orderBy: { name: "asc" },
-        }),
-    prisma.booking.findMany({
-      where: {
-        businessId: business.id,
-        status: "CONFIRMED",
-        startsAt: { gte: dayStart, lt: dayEnd },
-        ...(selectedStylistId ? { stylistId: selectedStylistId } : {}),
-      },
-      include: { service: true, stylist: true },
-      orderBy: { startsAt: "asc" },
-    }),
-  ]);
+        });
 
-  const stylists = selectedStylistId
-    ? allStylists.filter((s) => s.id === selectedStylistId)
+  // The week grid is for one stylist at a time; pick the first if none chosen.
+  const effectiveStylistId =
+    selectedStylistId ?? (view === "week" ? (allStylists[0]?.id ?? null) : null);
+
+  const bookings = await prisma.booking.findMany({
+    where: {
+      businessId: business.id,
+      status: "CONFIRMED",
+      startsAt: { gte: rangeStart, lt: rangeEnd },
+      ...(effectiveStylistId ? { stylistId: effectiveStylistId } : {}),
+    },
+    include: { service: true, stylist: true },
+    orderBy: { startsAt: "asc" },
+  });
+
+  const stylists = effectiveStylistId
+    ? allStylists.filter((s) => s.id === effectiveStylistId)
     : allStylists;
+
+  // Week + List data (salon-local days).
+  const weekDays = Array.from({ length: 7 }).map((_, i) => {
+    const d = new Date(Date.UTC(wy, wm - 1, wd + i, 12));
+    return {
+      dow: d.toLocaleDateString("en-US", { timeZone: "UTC", weekday: "short" }),
+      dom: d.getUTCDate(),
+      isToday: formatDateParam(d) === todayParam,
+    };
+  });
+  const baseUTC = Date.UTC(wy, wm - 1, wd);
+  const weekItems: WeekItem[] = bookings
+    .map((b) => {
+      const p = partsInTz(b.startsAt, tz);
+      const pe = partsInTz(b.endsAt, tz);
+      return {
+        id: b.id,
+        customerId: b.customerId,
+        customerName: b.customerName,
+        serviceName: b.service.name,
+        stylistName: b.stylist.name,
+        dayIdx: Math.round((Date.UTC(p.year, p.month - 1, p.day) - baseUTC) / 86400000),
+        startMin: p.minutesOfDay,
+        endMin: pe.minutesOfDay || 24 * 60,
+        timeLabel: fmtInTz(b.startsAt, tz, { hour: "numeric", minute: "2-digit" }),
+        color: colorForService(b.serviceId),
+        paid: !!b.paidOutsideAt,
+        confirmed: !!b.clientConfirmedAt,
+      };
+    })
+    .filter((i) => i.dayIdx >= 0 && i.dayIdx < 7);
+  const agendaGroups = weekDays
+    .map((wdInfo, idx) => ({
+      label: new Date(Date.UTC(wy, wm - 1, wd + idx, 12)).toLocaleDateString("en-US", {
+        timeZone: "UTC",
+        weekday: "long",
+        month: "long",
+        day: "numeric",
+      }),
+      isToday: wdInfo.isToday,
+      items: weekItems.filter((i) => i.dayIdx === idx).map((i) => ({ ...i, showStylist: !effectiveStylistId })),
+    }))
+    .filter((g) => g.items.length > 0);
+  const weekEndDate = new Date(Date.UTC(wy, wm - 1, wd + 6, 12));
+  const rangeLabel = `${weekStartDate.toLocaleDateString("en-US", { timeZone: "UTC", month: "short", day: "numeric" })} – ${weekEndDate.toLocaleDateString("en-US", { timeZone: "UTC", month: "short", day: "numeric", year: "numeric" })}`;
+  const viewHref = (v: string) => `/admin/calendar?date=${dateForLinks}&view=${v}${stylistQuery}`;
+  const navHref = (date: string) => `/admin/calendar?date=${date}&view=${view}${stylistQuery}`;
 
   const servicesUsed = new Map<
     string,
@@ -146,35 +209,51 @@ export default async function AdminCalendar({
         </a>
       </div>
       <p className="subtle" style={{ marginBottom: 20 }}>
-        {day.toLocaleDateString("en-US", {
-          timeZone: "UTC",
-          weekday: "long",
-          month: "long",
-          day: "numeric",
-          year: "numeric",
-        })}
+        {view === "day"
+          ? day.toLocaleDateString("en-US", {
+              timeZone: "UTC",
+              weekday: "long",
+              month: "long",
+              day: "numeric",
+              year: "numeric",
+            })
+          : rangeLabel}
       </p>
 
+      <div style={{ display: "flex", gap: 6, marginBottom: 14 }}>
+        {(["day", "week", "list"] as const).map((v) => (
+          <Link
+            key={v}
+            href={viewHref(v)}
+            className={view === v ? "btn-primary" : "btn-ghost"}
+            style={{ padding: "7px 16px", fontSize: 13, textDecoration: "none" }}
+          >
+            {v === "day" ? "Day" : v === "week" ? "Week" : "List"}
+          </Link>
+        ))}
+      </div>
+
       <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 16, flexWrap: "wrap" }}>
-        <Link href={`/admin/calendar?date=${formatDateParam(prevDay)}${stylistQuery}`} className="icon-btn">
+        <Link href={navHref(formatDateParam(prevDay))} className="icon-btn">
           ←
         </Link>
         <Link
-          href={`/admin/calendar?date=${todayParam}${stylistQuery}`}
+          href={navHref(todayParam)}
           className="btn-primary"
           style={{ padding: "8px 16px", fontSize: 13 }}
         >
           Today
         </Link>
-        <Link href={`/admin/calendar?date=${formatDateParam(nextDay)}${stylistQuery}`} className="icon-btn">
+        <Link href={navHref(formatDateParam(nextDay))} className="icon-btn">
           →
         </Link>
 
         {access.role === "owner" && (
           <StylistFilter
             stylists={allStylists}
-            selected={selectedStylistId ?? "all"}
+            selected={effectiveStylistId ?? "all"}
             date={dateForLinks}
+            view={view}
           />
         )}
       </div>
@@ -207,7 +286,18 @@ export default async function AdminCalendar({
         </div>
       )}
 
-      {stylists.length === 0 ? (
+      {view === "week" && stylists.length > 0 ? (
+        <WeekGrid
+          days={weekDays}
+          items={weekItems}
+          startHour={START_HOUR}
+          endHour={END_HOUR}
+          slotMinutes={SLOT_MINUTES}
+          rowHeight={ROW_HEIGHT}
+        />
+      ) : view === "list" ? (
+        <AgendaList groups={agendaGroups} />
+      ) : stylists.length === 0 ? (
         <p className="subtle">No active stylists.</p>
       ) : (
         <div

@@ -8,10 +8,12 @@ export default function StylistFilter({
   stylists,
   selected,
   date,
+  view = "day",
 }: {
   stylists: Stylist[];
   selected: string;
   date: string;
+  view?: string;
 }) {
   const router = useRouter();
 
@@ -21,6 +23,7 @@ export default function StylistFilter({
       onChange={(e) => {
         const params = new URLSearchParams();
         params.set("date", date);
+        if (view !== "day") params.set("view", view);
         if (e.target.value !== "all") {
           params.set("stylist", e.target.value);
         }
@@ -35,7 +38,7 @@ export default function StylistFilter({
         background: "var(--panel)",
       }}
     >
-      <option value="all">All stylists</option>
+      {view !== "week" && <option value="all">All stylists</option>}
       {stylists.map((s) => (
         <option key={s.id} value={s.id}>
           {s.name}
