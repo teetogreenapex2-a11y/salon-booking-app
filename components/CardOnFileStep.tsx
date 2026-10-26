@@ -16,18 +16,21 @@ type CustomerInfo = { name: string; email: string; phone: string };
 export default function CardOnFileStep({
   businessSlug,
   stylistId,
+  serviceId,
   customer,
   onDone,
 }: {
   businessSlug: string;
   stylistId: string;
+  serviceId?: string;
   customer: CustomerInfo;
-  onDone: (customerId: string | null) => void;
+  onDone: (customerId: string | null, depositPaymentIntentId?: string) => void;
 }) {
   const [stripePromise, setStripePromise] = useState<Promise<StripeJS | null> | null>(null);
   const [clientSecret, setClientSecret] = useState<string | null>(null);
   const [customerId, setCustomerId] = useState<string | null>(null);
   const [connectedAccountId, setConnectedAccountId] = useState<string | null>(null);
+  const [depositCents, setDepositCents] = useState(0);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -35,7 +38,7 @@ export default function CardOnFileStep({
     fetch("/api/bookings/card-setup", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ businessSlug, customer, stylistId }),
+      body: JSON.stringify({ businessSlug, customer, stylistId, serviceId }),
     })
       .then((res) => res.json())
       .then((data) => {
@@ -47,6 +50,7 @@ export default function CardOnFileStep({
         setCustomerId(data.customerId);
         setClientSecret(data.clientSecret);
         setConnectedAccountId(data.connectedAccountId);
+        setDepositCents(data.depositCents || 0);
         setStripePromise(
           loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!, {
             stripeAccount: data.connectedAccountId,
@@ -76,6 +80,7 @@ export default function CardOnFileStep({
         clientSecret={clientSecret}
         customerId={customerId}
         connectedAccountId={connectedAccountId}
+        depositCents={depositCents}
         onDone={onDone}
       />
     </Elements>
@@ -86,12 +91,14 @@ function CardForm({
   clientSecret,
   customerId,
   connectedAccountId,
+  depositCents,
   onDone,
 }: {
   clientSecret: string;
   customerId: string;
   connectedAccountId: string;
-  onDone: (customerId: string | null) => void;
+  depositCents: number;
+  onDone: (customerId: string | null, depositPaymentIntentId?: string) => void;
 }) {
   const stripe = useStripe();
   const elements = useElements();
@@ -109,34 +116,44 @@ function CardForm({
       return;
     }
 
-    const result = await stripe.confirmCardSetup(clientSecret, {
-      payment_method: { card },
-    });
+    const isDeposit = depositCents > 0;
+    const result = isDeposit
+      ? await stripe.confirmCardPayment(clientSecret, { payment_method: { card } })
+      : await stripe.confirmCardSetup(clientSecret, { payment_method: { card } });
 
     if (result.error) {
-      setError(result.error.message || "Card couldn't be saved — try another card.");
+      setError(
+        result.error.message ||
+          (isDeposit ? "Card was declined — try another card." : "Card couldn't be saved — try another card.")
+      );
       setSubmitting(false);
       return;
     }
+
+    const intentId = isDeposit
+      ? (result as { paymentIntent: { id: string } }).paymentIntent.id
+      : (result as { setupIntent: { id: string } }).setupIntent.id;
 
     await fetch("/api/bookings/card-setup/confirm", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         customerId,
-        setupIntentId: result.setupIntent.id,
+        ...(isDeposit ? { paymentIntentId: intentId } : { setupIntentId: intentId }),
         connectedAccountId,
       }),
     });
 
     setSubmitting(false);
-    onDone(customerId);
+    onDone(customerId, isDeposit ? intentId : undefined);
   }
 
   return (
     <div className="customer-form">
       <p className="subtle" style={{ fontWeight: 500, marginBottom: 8 }}>
-        Save a card on file to hold your appointment
+        {depositCents > 0
+          ? `A $${(depositCents / 100).toFixed(2)} deposit holds your appointment. It comes off your total, and it's refunded if you cancel in time.`
+          : "Save a card on file to hold your appointment"}
       </p>
       <div
         style={{
@@ -154,7 +171,7 @@ function CardForm({
         </p>
       )}
       <button className="btn-primary" style={{ marginTop: 12 }} onClick={handleSave} disabled={submitting}>
-        {submitting ? "Saving…" : "Save card & confirm booking"}
+        {submitting ? "Processing…" : depositCents > 0 ? `Pay $${(depositCents / 100).toFixed(2)} deposit & confirm` : "Save card & confirm booking"}
       </button>
     </div>
   );

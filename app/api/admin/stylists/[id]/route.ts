@@ -28,7 +28,7 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
     "name", "specialty", "active", "email",
     "independentPayouts", "independentBilling",
     "canEditOwnPricing", "canEditOwnHours", "canAddServices", "ownServicesOnly",
-    "retailCommissionPct", "venmoHandle", "cashAppHandle", "zelleInfo",
+    "depositsEnabled", "retailCommissionPct", "venmoHandle", "cashAppHandle", "zelleInfo",
   ];
   const data: Record<string, any> = {};
   for (const k of ALLOWED) if (k in body) data[k] = body[k];

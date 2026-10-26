@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { Clock, ChevronLeft, ChevronRight, Scissors, Palette, Sparkles, Droplets, Brush, Wind } from "lucide-react";
 import CardOnFileStep from "./CardOnFileStep";
 
-type Service = { id: string; name: string; durationMin: number; priceCents: number; tag: string | null };
+type Service = { id: string; name: string; durationMin: number; priceCents: number; depositCents?: number; tag: string | null };
 type Stylist = { id: string; name: string; specialty: string | null; photoUrl?: string | null };
 type Override = { stylistId: string; serviceId: string; priceCents: number | null; durationMin: number | null };
 
@@ -116,7 +116,7 @@ export default function BookingFlow({
     setStep("card");
   }
 
-  async function submitBooking(customerId: string | null) {
+  async function submitBooking(customerId: string | null, depositPaymentIntentId?: string) {
     if (!service || !stylist || pendingStartMin === null) return;
     // A double tap must not send the booking twice.
     if (inFlight.current) return;
@@ -138,6 +138,7 @@ export default function BookingFlow({
         startsAt: startsAt.toISOString(),
         customer,
         customerId,
+        depositPaymentIntentId,
         smsConsent,
       }),
     });
@@ -163,6 +164,8 @@ export default function BookingFlow({
       alert(
         res.status === 409
           ? "That slot was just booked — pick another time."
+          : res.status === 402
+          ? "Your deposit didn't go through. Please try again."
           : "Something went wrong and your booking wasn't saved. Please try again."
       );
       setStep("calendar");
@@ -199,6 +202,7 @@ export default function BookingFlow({
             <CardOnFileStep
               businessSlug={businessSlug}
               stylistId={stylist?.id ?? ""}
+              serviceId={service?.id}
               customer={customer}
               onDone={submitBooking}
             />

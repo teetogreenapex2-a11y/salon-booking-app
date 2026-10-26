@@ -8,19 +8,23 @@ import { stripe } from "@/lib/stripe";
 // CustomerCard row for that connected account so a later charge route can
 // use it.
 export async function POST(req: NextRequest) {
-  const { customerId, setupIntentId, connectedAccountId } = await req.json();
-  if (!customerId || !setupIntentId || !connectedAccountId) {
+  const { customerId, setupIntentId, paymentIntentId, connectedAccountId } = await req.json();
+  if (!customerId || (!setupIntentId && !paymentIntentId) || !connectedAccountId) {
     return NextResponse.json({ error: "Missing fields" }, { status: 400 });
   }
 
-  const setupIntent = await stripe.setupIntents.retrieve(setupIntentId, {
-    stripeAccount: connectedAccountId,
-  });
+  const intent = paymentIntentId
+    ? await stripe.paymentIntents.retrieve(paymentIntentId, { stripeAccount: connectedAccountId })
+    : await stripe.setupIntents.retrieve(setupIntentId, { stripeAccount: connectedAccountId });
+
+  if (paymentIntentId && intent.status !== "succeeded") {
+    return NextResponse.json({ error: "Deposit not paid" }, { status: 402 });
+  }
 
   const paymentMethodId =
-    typeof setupIntent.payment_method === "string"
-      ? setupIntent.payment_method
-      : setupIntent.payment_method?.id;
+    typeof intent.payment_method === "string"
+      ? intent.payment_method
+      : intent.payment_method?.id;
 
   if (!paymentMethodId) {
     return NextResponse.json({ error: "No payment method on setup intent" }, { status: 400 });

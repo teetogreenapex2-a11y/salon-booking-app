@@ -8,6 +8,7 @@ type Props = {
   businessName: string;
   businessSlug: string;
   serviceName: string;
+  depositLabel?: string | null;
   stylistName: string;
   whenLabel: string;
   businessAddress?: string | null;
@@ -228,6 +229,7 @@ export default function ManageBooking(p: Props) {
             <Row label="Date" value={p.dateLabel || p.whenLabel} />
             <Row label="Time" value={p.timeLabel || ""} />
             <Row label="Service" value={p.serviceName} />
+            {p.depositLabel && <Row label="Deposit" value={p.depositLabel} />}
             <Row label="Stylist" value={p.stylistName} />
             {p.businessAddress && (
               <Row

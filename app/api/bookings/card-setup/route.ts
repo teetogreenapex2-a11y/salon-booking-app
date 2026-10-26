@@ -14,7 +14,7 @@ import { stripe, resolvePayoutAccountId } from "@/lib/stripe";
 // is only ever usable for charges made under the SAME connected account it
 // was saved in, so this matters: see CustomerCard's comment in schema.prisma.
 export async function POST(req: NextRequest) {
-  const { businessSlug, customer, stylistId } = await req.json();
+  const { businessSlug, customer, stylistId, serviceId } = await req.json();
   if (!businessSlug || !customer?.name || !customer?.email) {
     return NextResponse.json({ error: "Missing fields" }, { status: 400 });
   }
@@ -69,6 +69,36 @@ export async function POST(req: NextRequest) {
     });
   }
 
+  // Deposit comes from the SERVICE row on the server, never from the browser.
+  const service = serviceId
+    ? await prisma.service.findFirst({ where: { id: serviceId, businessId: business.id } })
+    : null;
+  const depositCents =
+    business.depositsEnabled && (stylist?.depositsEnabled ?? true) ? (service?.depositCents ?? 0) : 0;
+
+  if (depositCents > 0) {
+    // Charge the deposit now and keep the card for later (no-show fee).
+    const pi = await stripe.paymentIntents.create(
+      {
+        amount: depositCents,
+        currency: "usd",
+        customer: stripeCustomerId,
+        setup_future_usage: "off_session",
+        payment_method_types: ["card"],
+        description: `Deposit — ${service!.name} — ${customer.name}`,
+        metadata: { kind: "deposit", serviceId: service!.id, customerId: customerRecord.id },
+      },
+      { stripeAccount: accountId }
+    );
+    return NextResponse.json({
+      customerId: customerRecord.id,
+      clientSecret: pi.client_secret,
+      connectedAccountId: accountId,
+      depositCents,
+      mode: "payment",
+    });
+  }
+
   const setupIntent = await stripe.setupIntents.create(
     { customer: stripeCustomerId, usage: "off_session" },
     { stripeAccount: accountId }
@@ -78,5 +108,7 @@ export async function POST(req: NextRequest) {
     customerId: customerRecord.id,
     clientSecret: setupIntent.client_secret,
     connectedAccountId: accountId,
+    depositCents: 0,
+    mode: "setup",
   });
 }

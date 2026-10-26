@@ -70,6 +70,7 @@ export async function PUT(req: NextRequest) {
       ...(accent !== undefined ? { accentColor: accent } : {}),
       ...(typeof noShowFeeCents === "number" ? { noShowFeeCents } : {}),
       ...(typeof listed === "boolean" ? { listed } : {}),
+      ...(typeof body.depositsEnabled === "boolean" ? { depositsEnabled: body.depositsEnabled } : {}),
       ...(cleanReview !== undefined ? { reviewUrl: cleanReview } : {}),
       ...(typeof cancelCutoffHours === "number" && cancelCutoffHours >= 0 && cancelCutoffHours <= 720
         ? { cancelCutoffHours: Math.round(cancelCutoffHours) }

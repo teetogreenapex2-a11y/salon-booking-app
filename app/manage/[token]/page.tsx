@@ -86,6 +86,13 @@ export default async function ManagePage({ params }: { params: { token: string }
         businessPhone={booking.business.phone}
         firstName={(booking.customerName || "").trim().split(/\s+/)[0] || ""}
         serviceName={booking.service.name}
+        depositLabel={
+          booking.depositCents > 0
+            ? booking.depositRefundedAt
+              ? `$${(booking.depositCents / 100).toFixed(2)} refunded`
+              : `$${(booking.depositCents / 100).toFixed(2)} paid`
+            : null
+        }
         stylistName={booking.stylist.name}
         whenLabel={when}
         dateLabel={dateLabel}

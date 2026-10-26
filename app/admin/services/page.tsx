@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { requireOwner } from "@/lib/access";
 import ServiceManager from "@/components/admin/ServiceManager";
+import DepositToggles from "@/components/admin/DepositToggles";
 
 export const dynamic = "force-dynamic";
 
@@ -12,6 +13,12 @@ export default async function ServicesPage() {
     orderBy: { name: "asc" },
   });
 
+  const stylists = await prisma.stylist.findMany({
+    where: { businessId: business.id, active: true },
+    orderBy: { name: "asc" },
+    select: { id: true, name: true, depositsEnabled: true },
+  });
+
   return (
     <div>
       <h1 className="display" style={{ fontSize: 26, marginBottom: 8 }}>
@@ -20,6 +27,7 @@ export default async function ServicesPage() {
       <p className="subtle" style={{ marginBottom: 20 }}>
         <a href="/admin/labels" style={{ textDecoration: "underline" }}>Print QR labels</a> so you can scan a service onto a client&apos;s bill.
       </p>
+      <DepositToggles salonEnabled={business.depositsEnabled} stylists={stylists} />
       <ServiceManager businessId={business.id} initialServices={services} />
     </div>
   );

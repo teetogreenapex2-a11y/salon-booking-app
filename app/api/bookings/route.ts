@@ -7,6 +7,7 @@ import { getEffectiveServiceInfo } from "@/lib/pricing";
 import { payEmailBlock } from "@/lib/paymentHandles";
 import { syncBookingToGoogle } from "@/lib/googleCalendar";
 import { newManageToken, manageUrl } from "@/lib/manage";
+import { stripe, resolvePayoutAccountId } from "@/lib/stripe";
 
 export async function POST(req: NextRequest) {
   const body = await req.json();
@@ -33,6 +34,55 @@ export async function POST(req: NextRequest) {
   const start = new Date(startsAt);
   const end = new Date(start.getTime() + info.durationMin * 60000);
 
+  // Deposit: if this service requires one and Stripe is connected, the
+  // browser must hand back a PaymentIntent that really succeeded for the
+  // right amount on the right account. Checked here, not trusted.
+  let depositCents = 0;
+  let depositPi: string | null = null;
+  let depositAccountId: string | null = null;
+  const stylistForPay = await prisma.stylist.findUnique({ where: { id: stylistId } });
+  if (
+    body.fromAdmin !== true &&
+    info.service.depositCents > 0 &&
+    business.depositsEnabled &&
+    (stylistForPay?.depositsEnabled ?? true)
+  ) {
+    const acct = stylistForPay ? resolvePayoutAccountId(stylistForPay, business) : business.stripeConnectedAccountId;
+    const enabled =
+      stylistForPay && acct === stylistForPay.stripeConnectedAccountId
+        ? stylistForPay.stripeChargesEnabled
+        : business.stripeChargesEnabled;
+    if (acct && enabled) {
+      const piId = typeof body.depositPaymentIntentId === "string" ? body.depositPaymentIntentId : "";
+      let ok = false;
+      if (piId) {
+        try {
+          const pi = await stripe.paymentIntents.retrieve(piId, { stripeAccount: acct });
+          ok = pi.status === "succeeded" && pi.amount === info.service.depositCents;
+        } catch {}
+      }
+      const reused = piId ? await prisma.booking.findUnique({ where: { depositPaymentIntentId: piId } }) : null;
+      // Double tap: this deposit already produced a booking — hand it back.
+      if (reused && reused.customerEmail.toLowerCase() === String(customer.email).toLowerCase()) {
+        return NextResponse.json(reused);
+      }
+      if (!ok || reused) {
+        return NextResponse.json({ error: "Deposit required" }, { status: 402 });
+      }
+      depositCents = info.service.depositCents;
+      depositPi = piId;
+      depositAccountId = acct;
+    }
+  }
+  async function refundDeposit() {
+    if (!depositPi || !depositAccountId) return;
+    try {
+      await stripe.refunds.create({ payment_intent: depositPi }, { stripeAccount: depositAccountId });
+    } catch (e) {
+      console.error("[bookings] deposit auto-refund failed", e);
+    }
+  }
+
   const conflict = await prisma.booking.findFirst({
     where: {
       stylistId,
@@ -50,6 +100,7 @@ export async function POST(req: NextRequest) {
     ) {
       return NextResponse.json(conflict);
     }
+    await refundDeposit();
     return NextResponse.json({ error: "Slot no longer available" }, { status: 409 });
   }
 
@@ -86,6 +137,8 @@ export async function POST(req: NextRequest) {
       startsAt: start,
       endsAt: end,
       priceCents,
+      depositCents,
+      depositPaymentIntentId: depositPi,
       customerId: customerRecord?.id,
       customerName: customer.name,
       customerEmail: customer.email,

@@ -103,6 +103,8 @@ model Business {
   stripeConnectedAccountId String?  @unique
   stripeChargesEnabled     Boolean  @default(false)
   noShowFeeCents           Int      @default(2500)
+  // Master switch for card deposits (service amounts are kept when off).
+  depositsEnabled          Boolean  @default(true)
   // Customers can reschedule/cancel themselves up to this many hours
   // before the appointment; closer than that they're told to contact the salon.
   cancelCutoffHours        Int      @default(24)
@@ -178,6 +180,8 @@ model Stylist {
   // (no-show fees, deposits) land in THEIR Stripe account instead of the
   // salon owner's. Needs its own Connect onboarding below.
   independentPayouts        Boolean  @default(false)
+  // Per-stylist switch: when false, no deposit is asked for this stylist.
+  depositsEnabled           Boolean  @default(true)
   stripeConnectedAccountId  String?  @unique
   stripeChargesEnabled      Boolean  @default(false)
 
@@ -208,6 +212,8 @@ model Service {
   name        String
   durationMin Int
   priceCents  Int
+  // Card deposit collected at booking (0 = none).
+  depositCents Int     @default(0)
   tag         String?
   // Printed on the service's QR label; scanned to add it to a client's bill.
   barcode     String?
@@ -421,6 +427,12 @@ model Booking {
   stripePaymentIntentId String?
 
   noShowFeeChargedAt DateTime?
+
+  // Card deposit paid at booking (charged on the salon's connected Stripe
+  // account). Refunded automatically if the customer cancels in time.
+  depositCents           Int      @default(0)
+  depositPaymentIntentId String?  @unique
+  depositRefundedAt      DateTime?
 
   // Set when the owner records that the customer paid outside the app
   // (Venmo, Cash App, Zelle, cash). A record only — no money moves here.

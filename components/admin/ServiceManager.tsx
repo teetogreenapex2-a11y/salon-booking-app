@@ -8,6 +8,7 @@ type Service = {
   name: string;
   durationMin: number;
   priceCents: number;
+  depositCents?: number;
   tag: string | null;
   active: boolean;
 };
@@ -24,6 +25,7 @@ export default function ServiceManager({
   const [name, setName] = useState("");
   const [duration, setDuration] = useState("45");
   const [price, setPrice] = useState("65");
+  const [deposit, setDeposit] = useState("0");
   const [saving, setSaving] = useState(false);
 
   async function addService(e: React.FormEvent) {
@@ -38,6 +40,7 @@ export default function ServiceManager({
         name,
         durationMin: Number(duration),
         priceCents: Math.round(Number(price) * 100),
+        depositCents: Math.round(Number(deposit || 0) * 100),
       }),
     });
     setSaving(false);
@@ -51,6 +54,7 @@ export default function ServiceManager({
     setName("");
     setDuration("45");
     setPrice("65");
+    setDeposit("0");
     router.refresh();
   }
 
@@ -64,8 +68,27 @@ export default function ServiceManager({
     router.refresh();
   }
 
+  async function saveDeposit(id: string, dollars: string) {
+    const depositCents = Math.max(0, Math.round(Number(dollars || 0) * 100));
+    const res = await fetch(`/api/admin/services/${id}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ depositCents }),
+    });
+    if (!res.ok) {
+      alert("Couldn't save the deposit — try again.");
+      return;
+    }
+    setServices((list) => list.map((s) => (s.id === id ? { ...s, depositCents } : s)));
+    router.refresh();
+  }
+
   return (
     <div>
+      <p className="subtle" style={{ marginBottom: 14, maxWidth: 520 }}>
+        Deposits are charged by card when the customer books (needs Stripe connected in Billing). Leave at $0 for none.
+        If the customer cancels before your cancellation cutoff, the deposit is refunded automatically.
+      </p>
       <div className="list" style={{ marginBottom: 28 }}>
         {services.map((s) => (
           <div key={s.id} className="card static" style={{ justifyContent: "space-between" }}>
@@ -77,6 +100,18 @@ export default function ServiceManager({
               <p className="subtle" style={{ margin: "2px 0 0" }}>
                 {s.durationMin} min · ${(s.priceCents / 100).toFixed(0)}
               </p>
+              <label className="subtle" style={{ fontSize: 12, display: "inline-flex", alignItems: "center", gap: 6, marginTop: 6 }}>
+                Deposit $
+                <input
+                  type="number"
+                  min="0"
+                  defaultValue={((s.depositCents ?? 0) / 100).toString()}
+                  onBlur={(e) => {
+                    if (Math.round(Number(e.target.value || 0) * 100) !== (s.depositCents ?? 0)) saveDeposit(s.id, e.target.value);
+                  }}
+                  style={{ width: 70 }}
+                />
+              </label>
             </div>
             <button
               className="btn-ghost"
@@ -119,6 +154,16 @@ export default function ServiceManager({
             type="number"
             value={price}
             onChange={(e) => setPrice(e.target.value)}
+            style={{ width: "100%", boxSizing: "border-box" }}
+          />
+        </label>
+        <label>
+          <span className="subtle" style={{ fontSize: 12, display: "block", marginBottom: 4 }}>Deposit at booking ($, 0 = none)</span>
+          <input
+            type="number"
+            min="0"
+            value={deposit}
+            onChange={(e) => setDeposit(e.target.value)}
             style={{ width: "100%", boxSizing: "border-box" }}
           />
         </label>

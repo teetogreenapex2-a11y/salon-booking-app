@@ -10,12 +10,18 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Not signed in" }, { status: 401 });
   }
 
-  const { name, durationMin, priceCents } = await req.json();
+  const { name, durationMin, priceCents, depositCents } = await req.json();
   if (!name || !durationMin || !priceCents) {
     return NextResponse.json({ error: "Missing fields" }, { status: 400 });
   }
   const service = await prisma.service.create({
-    data: { businessId: business.id, name, durationMin, priceCents },
+    data: {
+      businessId: business.id,
+      name,
+      durationMin,
+      priceCents,
+      depositCents: typeof depositCents === "number" && depositCents > 0 ? Math.min(depositCents, priceCents) : 0,
+    },
   });
   // Stylists set to "only their own services" don't get the standard menu.
   const ownOnly = await prisma.stylist.findMany({
