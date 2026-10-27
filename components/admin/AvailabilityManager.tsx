@@ -112,7 +112,7 @@ export default function AvailabilityManager({
 
       <div className="list" style={{ maxWidth: 480, opacity: locked ? 0.6 : 1 }}>
         {DAYS.map((label, d) => (
-          <div key={d} className="card static" style={{ justifyContent: "space-between", gap: 12 }}>
+          <div key={d} className="card static" style={{ justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
             <label style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 110 }}>
               <input
                 type="checkbox"
@@ -125,17 +125,20 @@ export default function AvailabilityManager({
               {label}
             </label>
             {rows[d].open && (
-              <div style={{ display: "flex", gap: 8 }}>
+              <div style={{ display: "flex", gap: 8, alignItems: "center", flex: "1 1 240px", minWidth: 0 }}>
                 <input
                   type="time"
+                  style={{ flex: 1, minWidth: 0, width: "100%" }}
                   value={rows[d].start}
                   disabled={locked}
                   onChange={(e) =>
                     setRows((r) => ({ ...r, [d]: { ...r[d], start: e.target.value } }))
                   }
                 />
+                <span className="subtle" style={{ fontSize: 13 }}>to</span>
                 <input
                   type="time"
+                  style={{ flex: 1, minWidth: 0, width: "100%" }}
                   value={rows[d].end}
                   disabled={locked}
                   onChange={(e) =>
