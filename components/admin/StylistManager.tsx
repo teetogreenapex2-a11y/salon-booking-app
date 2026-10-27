@@ -40,6 +40,7 @@ export default function StylistManager({
   const [saving, setSaving] = useState(false);
   const [showFormer, setShowFormer] = useState(false);
   const [openOffers, setOpenOffers] = useState<string | null>(null);
+  const [openSettings, setOpenSettings] = useState<string | null>(null);
   const [editing, setEditing] = useState<string | null>(null);
   const [nameDraft, setNameDraft] = useState("");
   const [specialtyDraft, setSpecialtyDraft] = useState("");
@@ -279,10 +280,29 @@ export default function StylistManager({
                       {!s.active && <span className="subtle"> (inactive)</span>}
                     </p>
                     {s.specialty && <p className="subtle" style={{ margin: "2px 0 0" }}>{s.specialty}</p>}
+                    <p className="subtle" style={{ margin: "4px 0 0", fontSize: 12 }}>
+                      {s.email ? s.email : "No login yet"}
+                    </p>
+                    <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginTop: 6 }}>
+                      {[
+                        s.independentPayouts || s.independentBilling ? "Booth renter" : null,
+                        s.venmoHandle || s.cashAppHandle || s.zelleInfo ? "Pay links set" : null,
+                        s.retailCommissionPct > 0 ? `${s.retailCommissionPct}% retail commission` : null,
+                      ]
+                        .filter(Boolean)
+                        .map((c) => (
+                          <span
+                            key={c as string}
+                            style={{ fontSize: 11, background: "rgba(36,28,31,0.06)", borderRadius: 999, padding: "2px 9px" }}
+                          >
+                            {c}
+                          </span>
+                        ))}
+                    </div>
                   </>
                 )}
               </div>
-              <div className="row" style={{ gap: 8 }}>
+              <div className="row" style={{ gap: 8, flexWrap: "wrap", justifyContent: "flex-end" }}>
                 <button
                   className="btn-ghost"
                   style={{ padding: "6px 12px", fontSize: 12 }}
@@ -290,11 +310,6 @@ export default function StylistManager({
                 >
                   {openOffers === s.id ? "Hide services" : `Services (${(offeredByStylist[s.id] ?? []).length})`}
                 </button>
-                {editing !== s.id && (
-                  <button className="btn-ghost" style={{ padding: "6px 12px", fontSize: 12 }} onClick={() => startEdit(s)}>
-                    Edit name
-                  </button>
-                )}
                 <Link
                   href={`/admin/stylists/${s.id}/pricing`}
                   className="btn-ghost"
@@ -305,9 +320,9 @@ export default function StylistManager({
                 <button
                   className="btn-ghost"
                   style={{ padding: "6px 12px", fontSize: 12 }}
-                  onClick={() => toggleActive(s.id, s.active)}
+                  onClick={() => setOpenSettings(openSettings === s.id ? null : s.id)}
                 >
-                  {s.active ? "Hide (no longer here)" : "Bring back"}
+                  {openSettings === s.id ? "Close settings" : "Settings"}
                 </button>
               </div>
             </div>
@@ -337,12 +352,28 @@ export default function StylistManager({
               </div>
             )}
 
+            {openSettings === s.id && (
+              <div style={{ display: "flex", flexDirection: "column", gap: 18 }}>
+                <div style={{ display: "flex", gap: 8, flexWrap: "wrap", paddingTop: 4 }}>
+                  {editing !== s.id && (
+                    <button className="btn-ghost" style={{ padding: "6px 12px", fontSize: 12 }} onClick={() => startEdit(s)}>
+                      Edit name
+                    </button>
+                  )}
+                  <button
+                    className="btn-ghost"
+                    style={{ padding: "6px 12px", fontSize: 12 }}
+                    onClick={() => toggleActive(s.id, s.active)}
+                  >
+                    {s.active ? "Hide (no longer here)" : "Bring back"}
+                  </button>
+                </div>
             <div
               style={{
                 display: "flex",
                 alignItems: "center",
                 gap: 8,
-                paddingTop: 10,
+                paddingTop: 18,
                 borderTop: "1px solid rgba(36,28,31,0.08)",
               }}
             >
@@ -382,11 +413,11 @@ export default function StylistManager({
                 display: "flex",
                 flexDirection: "column",
                 gap: 6,
-                paddingTop: 10,
+                paddingTop: 18,
                 borderTop: "1px solid rgba(36,28,31,0.08)",
               }}
             >
-              <p className="subtle" style={{ fontSize: 12, fontWeight: 600, margin: 0 }}>
+              <p style={{ fontSize: 14, fontWeight: 600, margin: 0 }}>
                 Booth renter
               </p>
               <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13 }}>
@@ -418,11 +449,11 @@ export default function StylistManager({
                 display: "flex",
                 flexDirection: "column",
                 gap: 6,
-                paddingTop: 10,
+                paddingTop: 18,
                 borderTop: "1px solid rgba(36,28,31,0.08)",
               }}
             >
-              <p className="subtle" style={{ fontSize: 12, fontWeight: 600, margin: 0 }}>
+              <p style={{ fontSize: 14, fontWeight: 600, margin: 0 }}>
                 Permissions
               </p>
               <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13 }}>
@@ -464,7 +495,7 @@ export default function StylistManager({
                 display: "flex",
                 alignItems: "center",
                 gap: 8,
-                paddingTop: 10,
+                paddingTop: 18,
                 borderTop: "1px solid rgba(36,28,31,0.08)",
               }}
             >
@@ -498,11 +529,11 @@ export default function StylistManager({
                 display: "flex",
                 flexDirection: "column",
                 gap: 6,
-                paddingTop: 10,
+                paddingTop: 18,
                 borderTop: "1px solid rgba(36,28,31,0.08)",
               }}
             >
-              <p className="subtle" style={{ fontSize: 12, fontWeight: 600, margin: 0 }}>
+              <p style={{ fontSize: 14, fontWeight: 600, margin: 0 }}>
                 Other ways to pay (optional)
               </p>
               <p className="subtle" style={{ margin: 0, fontSize: 12 }}>
@@ -551,6 +582,8 @@ export default function StylistManager({
                 <p className="subtle" style={{ color: "#b00020", margin: 0 }}>{payError[s.id]}</p>
               )}
             </div>
+              </div>
+            )}
           </div>
         ))}
         {stylists.length === 0 && <p className="subtle">No stylists yet — add one below.</p>}
