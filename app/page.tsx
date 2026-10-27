@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Wordmark from "@/components/Wordmark";
 import { redirect } from "next/navigation";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
@@ -62,7 +63,7 @@ export default async function MarketingHome({
         {/* NAV */}
         <div className="hx-sticky-top" style={{ position: "sticky", top: 0, zIndex: 20, background: "rgba(250,246,243,0.92)", backdropFilter: "blur(6px)", borderBottom: "1px solid var(--mk-line)" }}>
           <div className="mkt-wrap" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", height: 76 }}>
-            <div className="mkt-display" style={{ fontSize: 22, fontWeight: 600 }}>Hairsalonix</div>
+            <div className="mkt-display" style={{ fontWeight: 600 }}><Wordmark size={26} /></div>
             <div className="mkt-nav-links">
               <a href="#features" className="mkt-nav-text">Features</a>
               <a href="#roadmap" className="mkt-nav-text">What&rsquo;s coming</a>
@@ -250,7 +251,7 @@ export default async function MarketingHome({
                 <div style={{ padding: "16px 18px", background: "var(--mk-ink)", color: "#fff", fontSize: 13, fontWeight: 600, letterSpacing: "0.02em" }}>SMS reminders</div>
                 <div style={{ padding: "16px 18px", background: "var(--mk-ink)", color: "#fff", fontSize: 13, fontWeight: 600, letterSpacing: "0.02em" }}>Payment processing</div>
 
-                <div style={{ padding: "16px 18px", fontSize: 14, fontWeight: 700, background: "var(--mk-blush)" }}>Hairsalonix</div>
+                <div style={{ padding: "16px 18px", fontSize: 14, fontWeight: 700, background: "var(--mk-blush)" }}><Wordmark size={19} /></div>
                 <div style={{ padding: "16px 18px", fontSize: 14, background: "var(--mk-blush)" }}>$20/mo (+$10/stylist)</div>
                 <div style={{ padding: "16px 18px", fontSize: 14, background: "var(--mk-blush)" }}>Included, no per-text fees</div>
                 <div style={{ padding: "16px 18px", fontSize: 14, background: "var(--mk-blush)" }}>Stripe&rsquo;s standard rate, zero markup</div>
@@ -302,9 +303,9 @@ export default async function MarketingHome({
         {/* FOOTER */}
         <div style={{ borderTop: "1px solid var(--mk-line)", padding: "30px 0" }}>
           <div className="mkt-wrap" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: 13, color: "var(--mk-ink-soft)", flexWrap: "wrap", gap: 12 }}>
-            <div className="mkt-display" style={{ fontWeight: 600, color: "var(--mk-ink)" }}>Hairsalonix</div>
+            <div className="mkt-display" style={{ fontWeight: 600, color: "var(--mk-ink)" }}><Wordmark size={22} /></div>
             <Link href="/find">Find a salon</Link>
-            <div>© 2026 Hairsalonix</div>
+            <div>© 2026 <Wordmark size={14} /></div>
           </div>
         </div>
       </div>
