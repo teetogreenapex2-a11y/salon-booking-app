@@ -24,7 +24,7 @@ export default async function AdminDashboard({
   // Accounts that already finished the standard setup never see the quiz
   // unless they ask for it (?quiz=1).
   const alreadySetUp = setupSteps.filter((s) => !s.optional).every((s) => s.done);
-  const showQuiz = (!answers && !alreadySetUp) || searchParams.quiz === "1";
+  const showQuiz = !business.quickStart && ((!answers && !alreadySetUp) || searchParams.quiz === "1");
 
   const [stylistCount, serviceCount, upcomingBookings] = await Promise.all([
     prisma.stylist.count({ where: { businessId: business.id, active: true } }),
@@ -50,7 +50,7 @@ export default async function AdminDashboard({
         <SetupQuiz />
       ) : (
         <>
-          {answers?.skipped && (
+          {!business.quickStart && answers?.skipped && (
             <p className="subtle" style={{ marginBottom: 8, fontSize: 13 }}>
               <Link href="/admin?quiz=1">Answer a few quick questions</Link> to tailor your setup list.
             </p>

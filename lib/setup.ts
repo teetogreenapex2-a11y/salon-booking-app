@@ -18,6 +18,8 @@ type OwnerBusiness = {
   address: string | null;
   tagline: string | null;
   stripeChargesEnabled: boolean;
+  quickStart?: boolean;
+  servicesReviewedAt?: Date | null;
 };
 
 const APP_NAMES: Record<string, string> = {
@@ -79,6 +81,60 @@ export async function ownerSetupSteps(
     }),
     prisma.businessMember.count({ where: { businessId: business.id } }),
   ]);
+
+  // Quick-start signups get a short list: no questionnaire, no extras.
+  if (business.quickStart) {
+    const simple: SetupStep[] = [
+      {
+        key: "services",
+        title: "Check your services and prices",
+        description: "We started you with a typical menu. Change any price or time, then tap “Looks good.”",
+        href: "/admin/services",
+        cta: "Check my menu",
+        done: !!business.servicesReviewedAt,
+      },
+    ];
+    if (stylistCount === 0) {
+      simple.push({
+        key: "team",
+        title: "Add your stylists",
+        description: "Add everyone clients can book with.",
+        href: "/admin/stylists",
+        cta: "Add stylists",
+        done: false,
+      });
+    }
+    if (hoursCount === 0 || stylistCount > 1) {
+      simple.push({
+        key: "hours",
+        title: stylistCount > 1 ? "Set everyone's hours" : "Set your hours",
+        description: "Pick the days and times people can be booked.",
+        href: "/admin/availability",
+        cta: "Set hours",
+        done: hoursCount > 0 && stylistCount <= 1,
+      });
+    }
+    simple.push(
+      {
+        key: "share",
+        title: "Share your booking link",
+        description: "Put it in your Instagram bio and texts. This ticks off when your first booking comes in.",
+        href: "/admin/business",
+        cta: "See my link",
+        done: bookingCount > 0,
+      },
+      {
+        key: "payments-optional",
+        title: "Take card payments",
+        description: "Connect Stripe to take deposits and no-show fees. You can skip this and add it later.",
+        href: "/admin/billing",
+        cta: "Connect Stripe",
+        done: business.stripeChargesEnabled,
+        optional: true,
+      }
+    );
+    return simple;
+  }
 
   const answered = !!answers && !answers.skipped;
   const a: SetupAnswers = answered ? answers! : {};

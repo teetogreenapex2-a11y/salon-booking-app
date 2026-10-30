@@ -8,7 +8,7 @@ export default function OnboardingForm() {
   const [accountType, setAccountType] = useState<"salon" | "independent">("salon");
   const [name, setName] = useState("");
   const [slug, setSlug] = useState("");
-  const [address, setAddress] = useState("");
+  const [kind, setKind] = useState<string>("");
   const [yourName, setYourName] = useState("");
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
@@ -32,7 +32,7 @@ export default function OnboardingForm() {
     const res = await fetch("/api/onboarding", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name, slug, address, accountType, yourName }),
+      body: JSON.stringify({ name, slug, accountType, yourName, kind }),
     });
 
     setSubmitting(false);
@@ -93,15 +93,33 @@ export default function OnboardingForm() {
           required
         />
         <p className="subtle" style={{ fontSize: 12, marginTop: 4 }}>
-          hairsalonix.vercel.app/{slug || "your-name"}
+          hairsalonix.com/{slug || "your-name"}
         </p>
       </div>
 
-      <input
-        placeholder="Address (optional)"
-        value={address}
-        onChange={(e) => setAddress(e.target.value)}
-      />
+      <p className="subtle" style={{ fontWeight: 600, margin: "4px 0 8px" }}>What do you do?</p>
+      <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 4 }}>
+        {[
+          ["hair", "Hair"],
+          ["nails", "Nails"],
+          ["both", "Hair & nails"],
+          ["barber", "Barber"],
+          ["", "Something else"],
+        ].map(([v, label]) => (
+          <button
+            key={label}
+            type="button"
+            className={`btn-ghost ${kind === v ? "selected-tab" : ""}`}
+            style={{ padding: "8px 14px", fontSize: 14 }}
+            onClick={() => setKind(v)}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+      <p className="subtle" style={{ fontSize: 12, margin: 0 }}>
+        We&rsquo;ll start you with a typical menu you can change anytime.
+      </p>
 
       {error && <p style={{ color: "#b3261e", fontSize: 13 }}>{error}</p>}
 

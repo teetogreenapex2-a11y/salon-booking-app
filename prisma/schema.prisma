@@ -94,6 +94,10 @@ model Business {
   stripeSubscriptionId String?   @unique
   subscriptionStatus   String?
   trialEndsAt          DateTime?
+  // Signed up through the simple "Quick start": short setup list, starter
+  // menu, no questionnaire. servicesReviewedAt is set when they tap "Looks good".
+  quickStart           Boolean   @default(false)
+  servicesReviewedAt   DateTime?
 
   // Answers to the owner's first-visit setup questionnaire (see
   // lib/setup.ts). Null until they answer or skip; used only to tailor
@@ -214,6 +218,8 @@ model Service {
   priceCents  Int
   // Card deposit collected at booking (0 = none).
   depositCents Int     @default(0)
+  // Optional grouping on the menu: Hair, Nails, Barber, etc.
+  category    String?
   tag         String?
   // Printed on the service's QR label; scanned to add it to a client's bill.
   barcode     String?
