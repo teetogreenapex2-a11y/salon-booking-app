@@ -8,7 +8,7 @@ export const dynamic = "force-dynamic";
 
 async function ensureCodes(kind: "service" | "product", businessId: string) {
   const model: any = kind === "service" ? prisma.service : prisma.product;
-  const rows = await model.findMany({ where: { businessId, barcode: null } });
+  const rows = await model.findMany({ where: kind === "product" ? { businessId, barcode: null, stylistId: null } : { businessId, barcode: null } });
   for (const r of rows) {
     for (let i = 0; i < 5; i++) {
       try {
@@ -28,7 +28,7 @@ export default async function LabelsPage() {
 
   const [services, products] = await Promise.all([
     prisma.service.findMany({ where: { businessId: business.id, active: true }, orderBy: { name: "asc" } }),
-    prisma.product.findMany({ where: { businessId: business.id, active: true }, orderBy: { name: "asc" } }),
+    prisma.product.findMany({ where: { businessId: business.id, stylistId: null, active: true }, orderBy: { name: "asc" } }),
   ]);
 
   const items = [

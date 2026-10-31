@@ -69,9 +69,9 @@ type RetailRow = { name: string; units: number; revenueCents: number; costCents:
 // Product sales in a date range: units, revenue, cost of goods and profit.
 // Cost comes from the snapshot saved on each sale (older sales before costs
 // were entered count as $0 cost).
-async function retailForRange(businessId: string, start: Date, end: Date) {
+async function retailForRange(businessId: string, start: Date, end: Date, stylistId: string | null) {
   const items = await prisma.saleItem.findMany({
-    where: { sale: { businessId, createdAt: { gte: start, lt: end } } },
+    where: { sale: { businessId, createdAt: { gte: start, lt: end } }, product: { stylistId } },
     include: { product: true },
   });
   const map = new Map<string, RetailRow>();
@@ -260,14 +260,14 @@ export default async function AdminReports({
   ]);
 
   const isOwner = access.role !== "stylist";
-  const [retailMtd, retailMonth, lowStock, stockValueItems] = isOwner
-    ? await Promise.all([
-        retailForRange(business.id, mtdStart, mtdEnd),
-        retailForRange(business.id, monthStart, monthEnd),
-        prisma.product.findMany({ where: { businessId: business.id, active: true }, orderBy: { name: "asc" } }),
-        prisma.product.findMany({ where: { businessId: business.id }, select: { stockQty: true, costCents: true } }),
-      ])
-    : [[], [], [], []];
+  // Owner sees the salon's own products; a stylist sees only their own line.
+  const retailOwner = access.role === "stylist" ? access.stylist.id : null;
+  const [retailMtd, retailMonth, lowStock, stockValueItems] = await Promise.all([
+    retailForRange(business.id, mtdStart, mtdEnd, retailOwner),
+    retailForRange(business.id, monthStart, monthEnd, retailOwner),
+    prisma.product.findMany({ where: { businessId: business.id, stylistId: retailOwner, active: true }, orderBy: { name: "asc" } }),
+    prisma.product.findMany({ where: { businessId: business.id, stylistId: retailOwner }, select: { stockQty: true, costCents: true } }),
+  ]);
   const lowList = (lowStock as any[]).filter((p) => p.stockQty <= p.lowStockAt);
   const inventoryCost = (stockValueItems as any[]).reduce((n, p) => n + p.stockQty * p.costCents, 0);
 
@@ -316,7 +316,7 @@ export default async function AdminReports({
       </div>
       <StatsTable rows={browsedMonthRows} />
 
-      {isOwner && (
+      {(isOwner || (retailMtd as RetailRow[]).length > 0 || (lowStock as any[]).length > 0) && (
         <>
           <h2 className="display" style={{ fontSize: 18, margin: "40px 0 2px" }}>
             Retail products: this month

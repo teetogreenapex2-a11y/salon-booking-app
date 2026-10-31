@@ -139,6 +139,7 @@ model Stylist {
   id          String   @id @default(cuid())
   businessId  String
   business    Business @relation(fields: [businessId], references: [id])
+  products    Product[]
   name        String
   specialty   String?
   photoUrl    String?
@@ -338,6 +339,10 @@ model Product {
   id          String   @id @default(cuid())
   businessId  String
   business    Business @relation(fields: [businessId], references: [id])
+  // null = the salon's own product; set = belongs to that stylist (their own
+  // retail line, stock and barcodes — sold on their bookings only).
+  stylistId   String?
+  stylist     Stylist? @relation(fields: [stylistId], references: [id])
   name        String
   priceCents  Int
   stockQty    Int      @default(0)

@@ -3,6 +3,8 @@ import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { requireOwnerOrStylist } from "@/lib/access";
 import CollectPaymentButton from "@/components/admin/CollectPaymentButton";
+import SellProductsButton from "@/components/admin/SellProductsButton";
+import { canSellProduct } from "@/lib/productScope";
 import StylistPaymentOptions from "@/components/admin/StylistPaymentOptions";
 
 export const dynamic = "force-dynamic";
@@ -31,6 +33,12 @@ export default async function GetPaidPage() {
     orderBy: { startsAt: "desc" },
     take: 50,
   });
+
+  const allProducts = await prisma.product.findMany({
+    where: { businessId: stylist.businessId, active: true },
+    orderBy: { name: "asc" },
+  });
+  const sellable = allProducts.filter((p) => canSellProduct(p, stylist));
 
   return (
     <div>
@@ -81,6 +89,7 @@ export default async function GetPaidPage() {
                 depositCents={b.depositRefundedAt ? 0 : b.depositCents}
                 tipCents={b.tipCents}
               />
+              {!b.sale && sellable.length > 0 && <SellProductsButton bookingId={b.id} products={sellable} />}
             </div>
           ))}
         </div>

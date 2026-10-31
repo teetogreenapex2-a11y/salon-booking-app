@@ -6,6 +6,7 @@ import { resolvePayoutAccountId } from "@/lib/stripe";
 import CancelBookingButton from "@/components/CancelBookingButton";
 import MarkNoShowButton from "@/components/admin/MarkNoShowButton";
 import ChargeNoShowFeeButton from "@/components/admin/ChargeNoShowFeeButton";
+import { canSellProduct } from "@/lib/productScope";
 import SellProductsButton from "@/components/admin/SellProductsButton";
 import AddServiceToBill from "@/components/admin/AddServiceToBill";
 import CollectPaymentButton from "@/components/admin/CollectPaymentButton";
@@ -83,7 +84,8 @@ export default async function BookingsPage() {
     const hasCard = !!cardFor(b.customerId, accountId)?.stripePaymentMethodId;
     const live = b.status !== "CANCELLED" && b.status !== "NO_SHOW";
     const showAddService = live && !b.paidOutsideAt;
-    const showSell = b.status !== "CANCELLED" && !b.sale && hasCard && products.length > 0;
+    const sellable = products.filter((p) => canSellProduct(p, b.stylist));
+    const showSell = b.status !== "CANCELLED" && !b.sale && hasCard && sellable.length > 0;
     const showFee = b.status === "NO_SHOW" && !b.noShowFeeChargedAt && hasCard;
     const hasMore = b.status === "CONFIRMED" || showFee || showSell || showAddService;
     const contact = [displayEmail(b.customerEmail), b.customerPhone].filter(Boolean).join(" · ");
@@ -155,7 +157,7 @@ export default async function BookingsPage() {
                 </>
               )}
               {showFee && <ChargeNoShowFeeButton id={b.id} feeCents={business.noShowFeeCents} />}
-              {showSell && <SellProductsButton bookingId={b.id} products={products} />}
+              {showSell && <SellProductsButton bookingId={b.id} products={sellable} />}
               {showAddService && (
                 <AddServiceToBill
                   bookingId={b.id}

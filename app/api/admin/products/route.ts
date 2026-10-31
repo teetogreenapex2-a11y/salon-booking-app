@@ -1,15 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getCurrentBusiness } from "@/lib/auth";
+import { getProductActor } from "@/lib/productScope";
 import { cleanBarcode } from "@/lib/labels";
 
 // businessId always comes from the logged-in user's own business, never
 // from the request body — same reasoning as /api/admin/stylists.
 export async function POST(req: NextRequest) {
-  const business = await getCurrentBusiness();
-  if (!business) {
+  const actor = await getProductActor();
+  if (!actor) {
     return NextResponse.json({ error: "Not signed in" }, { status: 401 });
   }
+  const business = actor.business;
 
   const { name, priceCents, stockQty, costCents, lowStockAt, barcode } = await req.json();
   if (!name || typeof priceCents !== "number") {
@@ -25,6 +26,7 @@ export async function POST(req: NextRequest) {
   const product = await prisma.product.create({
     data: {
       businessId: business.id,
+      stylistId: actor.stylistId,
       name,
       barcode: code,
       priceCents: Math.round(priceCents),

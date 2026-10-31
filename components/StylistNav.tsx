@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { CalendarDays, BarChart3, Clock, Wallet, Tag, CreditCard } from "lucide-react";
+import { CalendarDays, BarChart3, Clock, Wallet, Tag, CreditCard, ShoppingBag } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
 // A stylist account only ever sees their own calendar, reports, hours,
@@ -14,6 +14,7 @@ function linksFor(stylistId: string | null, isBoothRenter: boolean) {
     { href: "/admin/reports", label: "Reports", Icon: BarChart3 },
     { href: "/admin/availability", label: "My hours", Icon: Clock },
     { href: "/admin/get-paid", label: "Get paid", Icon: Wallet },
+    { href: "/admin/products", label: "Products", Icon: ShoppingBag },
   ];
   if (stylistId) {
     links.push({ href: `/admin/stylists/${stylistId}/pricing`, label: "My pricing", Icon: Tag });

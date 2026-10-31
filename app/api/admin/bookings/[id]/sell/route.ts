@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getCurrentBusiness } from "@/lib/auth";
+import { getCurrentBusiness, getCurrentStylist } from "@/lib/auth";
+import { canSellProduct } from "@/lib/productScope";
 import { stripe, resolvePayoutAccountId } from "@/lib/stripe";
 
 // Rings up retail products at a booking's checkout — credited to whichever
@@ -10,13 +11,20 @@ import { stripe, resolvePayoutAccountId } from "@/lib/stripe";
 // see resolvePayoutAccountId) using the card on file saved under that same
 // account.
 export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
-  const business = await getCurrentBusiness();
+  const ownerBusiness = await getCurrentBusiness();
+  const loggedStylist = ownerBusiness ? null : await getCurrentStylist();
+  const business = ownerBusiness ?? loggedStylist?.business ?? null;
   if (!business) {
     return NextResponse.json({ error: "Not signed in" }, { status: 401 });
   }
 
   const booking = await prisma.booking.findFirst({
-    where: { id: params.id, businessId: business.id },
+    where: {
+      id: params.id,
+      businessId: business.id,
+      // A stylist can only ring up their own clients.
+      ...(loggedStylist ? { stylistId: loggedStylist.id } : {}),
+    },
     include: { customer: true, stylist: true, sale: true },
   });
   if (!booking) {
@@ -58,7 +66,7 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
   const products = await prisma.product.findMany({
     where: { id: { in: productIds }, businessId: business.id },
   });
-  const productById = new Map(products.map((p) => [p.id, p]));
+  const productById = new Map(products.filter((p) => canSellProduct(p, booking.stylist)).map((p) => [p.id, p]));
 
   let totalCents = 0;
   const saleItemsData: { productId: string; quantity: number; priceCentsEach: number; costCentsEach: number }[] = [];
