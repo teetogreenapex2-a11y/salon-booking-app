@@ -434,6 +434,10 @@ model Booking {
 
   noShowFeeChargedAt DateTime?
 
+  // Tip recorded when the booking is marked paid (cash/apps) or charged to
+  // the card on file. Belongs to the stylist; shown in reports.
+  tipCents Int @default(0)
+
   // Card deposit paid at booking (charged on the salon's connected Stripe
   // account). Refunded automatically if the customer cancels in time.
   depositCents           Int      @default(0)

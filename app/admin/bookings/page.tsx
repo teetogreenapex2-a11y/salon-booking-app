@@ -137,6 +137,9 @@ export default async function BookingsPage() {
               zelleInfo={b.stylist.zelleInfo}
               paidMethod={b.paidOutsideMethod}
               creditCents={b.giftCardCents}
+              depositCents={b.depositRefundedAt ? 0 : b.depositCents}
+              tipCents={b.tipCents}
+              hasCard={hasCard}
             />
           </div>
         )}

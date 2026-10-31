@@ -36,9 +36,15 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
       }
       await prisma.giftCardUse.deleteMany({ where: { bookingId: booking.id } });
     }
+    if (booking.paidOutsideMethod === "Card") {
+      return NextResponse.json(
+        { error: "A card payment can't be undone here — refund it in Stripe." },
+        { status: 400 }
+      );
+    }
     const cleared = await prisma.booking.update({
       where: { id: booking.id },
-      data: { paidOutsideAt: null, paidOutsideMethod: null, giftCardCents: 0 },
+      data: { paidOutsideAt: null, paidOutsideMethod: null, giftCardCents: 0, tipCents: 0 },
     });
     return NextResponse.json(cleared);
   }
@@ -47,9 +53,11 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
     return NextResponse.json({ error: "Pick how they paid." }, { status: 400 });
   }
 
+  // Optional tip, in cents (capped at $1,000 to catch typos).
+  const tipCents = Math.max(0, Math.min(Math.round(Number(body.tipCents) || 0), 100000));
   const updated = await prisma.booking.update({
     where: { id: booking.id },
-    data: { paidOutsideAt: new Date(), paidOutsideMethod: body.method },
+    data: { paidOutsideAt: new Date(), paidOutsideMethod: body.method, tipCents },
   });
   return NextResponse.json(updated);
 }

@@ -77,7 +77,9 @@ export default async function GetPaidPage() {
                 cashAppHandle={stylist.cashAppHandle}
                 zelleInfo={stylist.zelleInfo}
                 paidMethod={b.paidOutsideMethod}
-                        creditCents={b.giftCardCents}
+                creditCents={b.giftCardCents}
+                depositCents={b.depositRefundedAt ? 0 : b.depositCents}
+                tipCents={b.tipCents}
               />
             </div>
           ))}

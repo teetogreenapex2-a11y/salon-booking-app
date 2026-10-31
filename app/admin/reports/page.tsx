@@ -18,6 +18,7 @@ type StylistRow = {
   completed: number;
   revenueCents: number;
   collectedCents: number;
+  tipsCents: number;
   byMethod: Record<string, number>;
   noShows: number;
   cancelled: number;
@@ -34,7 +35,7 @@ async function statsForRange(businessId: string, start: Date, end: Date, stylist
 
   const stats = new Map<string, StylistRow>();
   for (const s of stylists) {
-    stats.set(s.id, { name: s.name, completed: 0, revenueCents: 0, collectedCents: 0, byMethod: {}, noShows: 0, cancelled: 0 });
+    stats.set(s.id, { name: s.name, completed: 0, revenueCents: 0, collectedCents: 0, tipsCents: 0, byMethod: {}, noShows: 0, cancelled: 0 });
   }
 
   for (const b of bookings) {
@@ -47,6 +48,7 @@ async function statsForRange(businessId: string, start: Date, end: Date, stylist
       // "Collected" = marked paid (Venmo, Cash App, Zelle, cash, gift card…).
       if (b.paidOutsideAt) {
         entry.collectedCents += price;
+        entry.tipsCents += b.tipCents || 0;
         const method = b.paidOutsideMethod || "Other";
         const gift = method !== "Gift card" ? Math.min(b.giftCardCents || 0, price) : 0;
         if (gift > 0) entry.byMethod["Gift card"] = (entry.byMethod["Gift card"] || 0) + gift;
@@ -133,6 +135,7 @@ function StatsTable({ rows }: { rows: StylistRow[] }) {
   const totalRevenue = rows.reduce((sum, r) => sum + r.revenueCents, 0);
   const totalBookings = rows.reduce((sum, r) => sum + r.completed, 0);
   const totalCollected = rows.reduce((sum, r) => sum + r.collectedCents, 0);
+  const totalTips = rows.reduce((sum, r) => sum + r.tipsCents, 0);
   const methodTotals: Record<string, number> = {};
   for (const r of rows) for (const [m, c] of Object.entries(r.byMethod)) methodTotals[m] = (methodTotals[m] || 0) + c;
   const methodList = Object.entries(methodTotals).sort((a, b) => b[1] - a[1]);
@@ -152,6 +155,12 @@ function StatsTable({ rows }: { rows: StylistRow[] }) {
           <span className="stat-number">{formatCents(totalRevenue - totalCollected)}</span>
           <span className="subtle">Unpaid</span>
         </div>
+        {totalTips > 0 && (
+          <div className="stat-card">
+            <span className="stat-number">{formatCents(totalTips)}</span>
+            <span className="subtle">Tips</span>
+          </div>
+        )}
         <div className="stat-card">
           <span className="stat-number">{totalBookings}</span>
           <span className="subtle">Bookings</span>
@@ -173,6 +182,7 @@ function StatsTable({ rows }: { rows: StylistRow[] }) {
               <th>Bookings</th>
               <th>Revenue</th>
               <th>Collected</th>
+              <th>Tips</th>
               <th>No-shows</th>
               <th>Cancelled</th>
             </tr>
@@ -184,6 +194,7 @@ function StatsTable({ rows }: { rows: StylistRow[] }) {
                 <td>{r.completed}</td>
                 <td>{formatCents(r.revenueCents)}</td>
                 <td>{formatCents(r.collectedCents)}</td>
+                <td>{formatCents(r.tipsCents)}</td>
                 <td style={r.noShows > 0 ? { color: "#b3261e" } : undefined}>{r.noShows}</td>
                 <td>{r.cancelled}</td>
               </tr>

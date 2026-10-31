@@ -18,6 +18,9 @@ export default function CollectPaymentButton({
   zelleInfo,
   paidMethod,
   creditCents = 0,
+  depositCents = 0,
+  tipCents: savedTipCents = 0,
+  hasCard = false,
 }: {
   bookingId: string;
   totalCents: number;
@@ -27,6 +30,11 @@ export default function CollectPaymentButton({
   zelleInfo: string | null;
   paidMethod: string | null;
   creditCents?: number;
+  // Deposit already paid by card at booking (0 if none or refunded).
+  depositCents?: number;
+  tipCents?: number;
+  // True when the customer has a saved card we can charge.
+  hasCard?: boolean;
 }) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
@@ -34,7 +42,15 @@ export default function CollectPaymentButton({
   const [error, setError] = useState("");
   const [giftCode, setGiftCode] = useState("");
 
-  const dueCents = totalCents - creditCents;
+  const dueCents = Math.max(0, totalCents - creditCents - depositCents);
+  const [tipMode, setTipMode] = useState<"none" | 15 | 20 | 25 | "custom">("none");
+  const [customTip, setCustomTip] = useState("");
+  const tipCents =
+    tipMode === "none"
+      ? 0
+      : tipMode === "custom"
+      ? Math.max(0, Math.round((parseFloat(customTip) || 0) * 100))
+      : Math.round((totalCents * tipMode) / 100);
   const amount = (dueCents / 100).toFixed(2);
   const venmoUrl = venmoHandle ? buildVenmoUrl(venmoHandle, dueCents, note) : null;
   const cashAppUrl = cashAppHandle ? buildCashAppUrl(cashAppHandle, dueCents) : null;
@@ -56,6 +72,54 @@ export default function CollectPaymentButton({
       setError(data.error || "Couldn't save that — try again.");
     }
   }
+
+  async function chargeCard() {
+    const total = ((dueCents + tipCents) / 100).toFixed(2);
+    if (!confirm(`Charge the card on file $${total}${tipCents ? ` (includes $${(tipCents / 100).toFixed(2)} tip)` : ""}?`)) return;
+    setBusy(true);
+    setError("");
+    const res = await fetch(`/api/admin/bookings/${bookingId}/charge-card`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ tipCents }),
+    });
+    setBusy(false);
+    if (res.ok) {
+      router.refresh();
+    } else {
+      const data = await res.json().catch(() => ({}));
+      setError(data.error || "Couldn't charge the card.");
+    }
+  }
+
+  const tipRow = (
+    <div style={{ display: "flex", gap: 6, flexWrap: "wrap", alignItems: "center" }}>
+      <span className="subtle" style={{ fontSize: 11 }}>Tip:</span>
+      {([["none", "None"], [15, "15%"], [20, "20%"], [25, "25%"], ["custom", "$"]] as const).map(([v, label]) => (
+        <button
+          key={String(v)}
+          type="button"
+          className={`btn-ghost ${tipMode === v ? "selected-tab" : ""}`}
+          style={{ padding: "4px 10px", fontSize: 12 }}
+          onClick={() => setTipMode(v)}
+        >
+          {label}
+        </button>
+      ))}
+      {tipMode === "custom" && (
+        <input
+          type="number"
+          min="0"
+          step="0.01"
+          placeholder="0.00"
+          value={customTip}
+          onChange={(e) => setCustomTip(e.target.value)}
+          style={{ width: 70, fontSize: 12 }}
+        />
+      )}
+      {tipCents > 0 && <span className="subtle" style={{ fontSize: 11 }}>= ${(tipCents / 100).toFixed(2)}</span>}
+    </div>
+  );
 
   async function applyGiftCard() {
     setBusy(true);
@@ -89,16 +153,18 @@ export default function CollectPaymentButton({
             padding: "3px 10px",
           }}
         >
-          ✓ PAID · {paidMethod}
+          ✓ PAID · {paidMethod}{savedTipCents > 0 ? ` · tip $${(savedTipCents / 100).toFixed(2)}` : ""}
         </span>
-        <button
-          className="btn-ghost"
-          style={{ padding: "2px 8px", fontSize: 11 }}
-          onClick={() => send({ undo: true })}
-          disabled={busy}
-        >
-          Undo
-        </button>
+        {paidMethod !== "Card" && (
+          <button
+            className="btn-ghost"
+            style={{ padding: "2px 8px", fontSize: 11 }}
+            onClick={() => send({ undo: true })}
+            disabled={busy}
+          >
+            Undo
+          </button>
+        )}
       </span>
     );
   }
@@ -106,6 +172,12 @@ export default function CollectPaymentButton({
   if (!open) {
     return (
       <div style={{ display: "flex", flexDirection: "column", gap: 6, alignItems: "flex-start" }}>
+        {depositCents > 0 && (
+          <span className="subtle" style={{ fontSize: 11 }}>
+            Deposit ${(depositCents / 100).toFixed(2)} paid · balance ${amount}
+          </span>
+        )}
+        {tipRow}
         <span className="subtle" style={{ fontSize: 11 }}>Paid with (one tap):</span>
         <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
           {METHODS.map((m) => (
@@ -113,12 +185,22 @@ export default function CollectPaymentButton({
               key={m}
               className="btn-ghost"
               style={{ padding: "6px 10px", fontSize: 12 }}
-              onClick={() => send({ method: m })}
+              onClick={() => send({ method: m, tipCents })}
               disabled={busy}
             >
               {m}
             </button>
           ))}
+          {hasCard && (
+            <button
+              className="btn-primary"
+              style={{ padding: "6px 10px", fontSize: 12 }}
+              onClick={chargeCard}
+              disabled={busy}
+            >
+              Card on file ${((dueCents + tipCents) / 100).toFixed(2)}
+            </button>
+          )}
           <button className="btn-ghost" style={{ padding: "6px 10px", fontSize: 12 }} onClick={() => setOpen(true)} disabled={busy}>
             More…
           </button>
@@ -173,6 +255,10 @@ export default function CollectPaymentButton({
           No Venmo, Cash App or Zelle set up for this stylist yet — add one on the Stylists page.
         </span>
       )}
+      {depositCents > 0 && (
+        <span className="subtle" style={{ fontSize: 12 }}>Deposit paid: ${(depositCents / 100).toFixed(2)}</span>
+      )}
+      {tipRow}
       <span className="subtle" style={{ fontSize: 12 }}>Once they&rsquo;ve paid, mark how:</span>
       <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
         {METHODS.map((m) => (
@@ -180,7 +266,7 @@ export default function CollectPaymentButton({
             key={m}
             className="btn-ghost"
             style={{ padding: "6px 10px", fontSize: 12 }}
-            onClick={() => send({ method: m })}
+            onClick={() => send({ method: m, tipCents })}
             disabled={busy}
           >
             {m}
