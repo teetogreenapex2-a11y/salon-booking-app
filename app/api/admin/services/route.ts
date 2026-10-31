@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getCurrentBusiness } from "@/lib/auth";
+import { cleanCategory } from "@/lib/categories";
 
 // businessId now always comes from the logged-in user's own business, never
 // from the request body — same fix as the stylists route.
@@ -10,7 +11,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Not signed in" }, { status: 401 });
   }
 
-  const { name, durationMin, priceCents, depositCents } = await req.json();
+  const { name, durationMin, priceCents, depositCents, category } = await req.json();
   if (!name || !durationMin || !priceCents) {
     return NextResponse.json({ error: "Missing fields" }, { status: 400 });
   }
@@ -18,6 +19,7 @@ export async function POST(req: NextRequest) {
     data: {
       businessId: business.id,
       name,
+      category: cleanCategory(category),
       durationMin,
       priceCents,
       depositCents: typeof depositCents === "number" && depositCents > 0 ? Math.min(depositCents, priceCents) : 0,

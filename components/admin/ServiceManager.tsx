@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { CATEGORY_SUGGESTIONS } from "@/lib/categories";
 
 type Service = {
   id: string;
@@ -9,6 +10,7 @@ type Service = {
   durationMin: number;
   priceCents: number;
   depositCents?: number;
+  category?: string | null;
   tag: string | null;
   active: boolean;
 };
@@ -26,6 +28,7 @@ export default function ServiceManager({
   const [duration, setDuration] = useState("45");
   const [price, setPrice] = useState("65");
   const [deposit, setDeposit] = useState("0");
+  const [category, setCategory] = useState("");
   const [saving, setSaving] = useState(false);
 
   async function addService(e: React.FormEvent) {
@@ -41,6 +44,7 @@ export default function ServiceManager({
         durationMin: Number(duration),
         priceCents: Math.round(Number(price) * 100),
         depositCents: Math.round(Number(deposit || 0) * 100),
+        category,
       }),
     });
     setSaving(false);
@@ -55,6 +59,7 @@ export default function ServiceManager({
     setDuration("45");
     setPrice("65");
     setDeposit("0");
+    setCategory("");
     router.refresh();
   }
 
@@ -65,6 +70,21 @@ export default function ServiceManager({
       body: JSON.stringify({ active: !active }),
     });
     setServices((list) => list.map((s) => (s.id === id ? { ...s, active: !active } : s)));
+    router.refresh();
+  }
+
+  async function saveCategory(id: string, value: string) {
+    const clean = value.trim().replace(/\s+/g, " ").slice(0, 40) || null;
+    const res = await fetch(`/api/admin/services/${id}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ category: clean }),
+    });
+    if (!res.ok) {
+      alert("Couldn't save the category — try again.");
+      return;
+    }
+    setServices((list) => list.map((s) => (s.id === id ? { ...s, category: clean } : s)));
     router.refresh();
   }
 
@@ -85,6 +105,14 @@ export default function ServiceManager({
 
   return (
     <div>
+      <datalist id="service-categories">
+        {CATEGORY_SUGGESTIONS.map((c) => (
+          <option key={c} value={c} />
+        ))}
+      </datalist>
+      <p className="subtle" style={{ marginBottom: 14, maxWidth: 520 }}>
+        Give each service a category (Hair, Nails…) and clients see your menu grouped under those headings.
+      </p>
       <p className="subtle" style={{ marginBottom: 14, maxWidth: 520 }}>
         Deposits are charged by card when the customer books (needs Stripe connected in Billing). Leave at $0 for none.
         If the customer cancels before your cancellation cutoff, the deposit is refunded automatically.
@@ -100,6 +128,18 @@ export default function ServiceManager({
               <p className="subtle" style={{ margin: "2px 0 0" }}>
                 {s.durationMin} min · ${(s.priceCents / 100).toFixed(0)}
               </p>
+              <label className="subtle" style={{ fontSize: 12, display: "inline-flex", alignItems: "center", gap: 6, marginTop: 6, marginRight: 14 }}>
+                Category
+                <input
+                  list="service-categories"
+                  defaultValue={s.category ?? ""}
+                  placeholder="e.g. Hair"
+                  onBlur={(e) => {
+                    if (e.target.value.trim() !== (s.category ?? "")) saveCategory(s.id, e.target.value);
+                  }}
+                  style={{ width: 120 }}
+                />
+              </label>
               <label className="subtle" style={{ fontSize: 12, display: "inline-flex", alignItems: "center", gap: 6, marginTop: 6 }}>
                 Deposit $
                 <input
@@ -136,6 +176,16 @@ export default function ServiceManager({
         <label>
           <span className="subtle" style={{ fontSize: 12, display: "block", marginBottom: 4 }}>Service name</span>
           <input placeholder="e.g. Balayage" value={name} onChange={(e) => setName(e.target.value)} style={{ width: "100%", boxSizing: "border-box" }} />
+        </label>
+        <label>
+          <span className="subtle" style={{ fontSize: 12, display: "block", marginBottom: 4 }}>Category (optional)</span>
+          <input
+            list="service-categories"
+            placeholder="e.g. Hair, Nails"
+            value={category}
+            onChange={(e) => setCategory(e.target.value)}
+            style={{ width: "100%", boxSizing: "border-box" }}
+          />
         </label>
         <label>
           <span className="subtle" style={{ fontSize: 12, display: "block", marginBottom: 4 }}>Duration (minutes)</span>

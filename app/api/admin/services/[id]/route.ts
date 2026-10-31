@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getCurrentBusiness } from "@/lib/auth";
+import { cleanCategory } from "@/lib/categories";
 
 // Same ownership check as the stylist [id] route: confirms the service
 // belongs to the logged-in user's business before allowing an update.
@@ -18,6 +19,7 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
   }
 
   const data = await req.json();
+  if ("category" in data) data.category = cleanCategory(data.category);
   const service = await prisma.service.update({ where: { id: params.id }, data });
   return NextResponse.json(service);
 }

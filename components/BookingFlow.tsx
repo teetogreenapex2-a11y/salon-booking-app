@@ -4,8 +4,9 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Clock, ChevronLeft, ChevronRight, Scissors, Palette, Sparkles, Droplets, Brush, Wind } from "lucide-react";
 import CardOnFileStep from "./CardOnFileStep";
+import { groupByCategory } from "@/lib/categories";
 
-type Service = { id: string; name: string; durationMin: number; priceCents: number; depositCents?: number; tag: string | null };
+type Service = { id: string; name: string; durationMin: number; priceCents: number; depositCents?: number; category?: string | null; tag: string | null };
 type Stylist = { id: string; name: string; specialty: string | null; photoUrl?: string | null };
 type Override = { stylistId: string; serviceId: string; priceCents: number | null; durationMin: number | null };
 
@@ -331,9 +332,18 @@ function SelectStep({
             if (offered.length === 0) {
               return <p className="subtle">{sty.name} doesn&rsquo;t offer any services right now.</p>;
             }
+            const groups = groupByCategory(offered);
             return (
-              <div className="list">
-                {offered.map((s) => {
+              <div>
+                {groups.map((g) => (
+                  <div key={g.category ?? "_none"} style={{ marginBottom: 18 }}>
+                    {groups.length > 1 && (
+                      <p style={{ fontSize: 12, fontWeight: 700, letterSpacing: "0.06em", textTransform: "uppercase", margin: "0 0 8px", opacity: 0.7 }}>
+                        {g.category ?? "Other"}
+                      </p>
+                    )}
+                    <div className="list">
+                {g.items.map((s) => {
                   const eff = effectiveFor(sty, s);
                   return (
                     <button key={s.id} className={`card ${svc?.id === s.id ? "selected" : ""}`} onClick={() => setSvc(s)}>
@@ -355,6 +365,9 @@ function SelectStep({
                     </button>
                   );
                 })}
+                    </div>
+                  </div>
+                ))}
               </div>
             );
           })()}
