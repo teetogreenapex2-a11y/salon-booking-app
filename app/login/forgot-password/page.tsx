@@ -7,6 +7,7 @@ export default function ForgotPasswordPage() {
   const [email, setEmail] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [sent, setSent] = useState(false);
+  const [stylist, setStylist] = useState(false);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -14,7 +15,7 @@ export default function ForgotPasswordPage() {
     await fetch("/api/auth/forgot-password", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email }),
+      body: JSON.stringify({ email, kind: stylist ? "stylist" : undefined }),
     });
     setSubmitting(false);
     setSent(true);
@@ -47,6 +48,10 @@ export default function ForgotPasswordPage() {
           onChange={(e) => setEmail(e.target.value)}
           required
         />
+        <label style={{ display: "flex", gap: 8, alignItems: "center", fontSize: 14 }}>
+          <input type="checkbox" checked={stylist} onChange={(e) => setStylist(e.target.checked)} style={{ width: "auto" }} />
+          This is for my stylist login
+        </label>
         <button className="btn-primary" type="submit" disabled={submitting}>
           {submitting ? "Sending…" : "Send reset link"}
         </button>

@@ -9,7 +9,8 @@ import { sendEmail } from "@/lib/email";
 // from sign-in link tokens for the same email, so neither can be used in
 // place of the other.
 export async function POST(req: NextRequest) {
-  const { email } = await req.json();
+  const { email, kind } = await req.json();
+  const isStylist = kind === "stylist";
   const cleanEmail = String(email || "").trim().toLowerCase();
 
   if (!cleanEmail) {
@@ -24,12 +25,17 @@ export async function POST(req: NextRequest) {
     message: "If that email has an account, a reset link is on its way.",
   });
 
-  const user = await prisma.user.findUnique({ where: { email: cleanEmail } });
-  if (!user) {
-    return genericResponse;
+  if (isStylist) {
+    const stylist = await prisma.stylist.findFirst({
+      where: { email: { equals: cleanEmail, mode: "insensitive" } },
+    });
+    if (!stylist) return genericResponse;
+  } else {
+    const user = await prisma.user.findUnique({ where: { email: cleanEmail } });
+    if (!user) return genericResponse;
   }
 
-  const identifier = `reset:${cleanEmail}`;
+  const identifier = `${isStylist ? "reset-stylist" : "reset"}:${cleanEmail}`;
 
   // Clear out any earlier unused reset tokens for this email first, so
   // only the most recently requested link works.
@@ -43,11 +49,11 @@ export async function POST(req: NextRequest) {
   });
 
   const origin = req.headers.get("origin") || `https://${process.env.VERCEL_URL}`;
-  const link = `${origin}/login/reset-password?email=${encodeURIComponent(cleanEmail)}&token=${token}`;
+  const link = `${origin}/login/reset-password?email=${encodeURIComponent(cleanEmail)}&token=${token}${isStylist ? "&kind=stylist" : ""}`;
 
   await sendEmail(
     cleanEmail,
-    "Reset your Hairsalonix password",
+    isStylist ? "Set your Hairsalonix stylist password" : "Reset your Hairsalonix password",
     `
       <p>Click below to set a new password:</p>
       <p><a href="${link}">Reset your password</a></p>

@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 
-export default function ResetPasswordForm({ email, token }: { email: string; token: string }) {
+export default function ResetPasswordForm({ email, token, kind }: { email: string; token: string; kind?: string }) {
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
   const [submitting, setSubmitting] = useState(false);
@@ -45,7 +45,7 @@ export default function ResetPasswordForm({ email, token }: { email: string; tok
     const res = await fetch("/api/auth/reset-password", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email, token, password }),
+      body: JSON.stringify({ email, token, password, kind }),
     });
     setSubmitting(false);
     if (res.ok) {
@@ -59,7 +59,7 @@ export default function ResetPasswordForm({ email, token }: { email: string; tok
   return (
     <>
       <p className="tagline">
-        Setting a new password for <strong>{email}</strong>.
+        Setting a new {kind === "stylist" ? "stylist " : ""}password for <strong>{email}</strong>.
       </p>
       <form onSubmit={handleSubmit} className="customer-form">
         <input

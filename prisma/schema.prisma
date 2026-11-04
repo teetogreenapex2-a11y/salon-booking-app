@@ -150,6 +150,9 @@ model Stylist {
   // signed-in email at request time (see getCurrentStylist in lib/auth.ts)
   // so access can be granted before that person has ever signed in once.
   email       String?  @unique
+  // Separate stylist-side password (bcrypt). Lets one email hold both an
+  // owner login and a stylist login: the password typed decides the view.
+  passwordHash String?
 
   googleRefreshToken  String?
   outlookRefreshToken String?

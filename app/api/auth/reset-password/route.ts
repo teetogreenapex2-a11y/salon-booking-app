@@ -8,7 +8,8 @@ import { prisma } from "@/lib/prisma";
 // scripts/hash-password.js uses, just done server-side instead of by hand
 // in Prisma Studio.
 export async function POST(req: NextRequest) {
-  const { email, token, password } = await req.json();
+  const { email, token, password, kind } = await req.json();
+  const isStylist = kind === "stylist";
   const cleanEmail = String(email || "").trim().toLowerCase();
 
   if (!cleanEmail || !token || !password) {
@@ -18,7 +19,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Password must be at least 8 characters" }, { status: 400 });
   }
 
-  const identifier = `reset:${cleanEmail}`;
+  const identifier = `${isStylist ? "reset-stylist" : "reset"}:${cleanEmail}`;
 
   const record = await prisma.verificationToken.findUnique({
     where: { identifier_token: { identifier, token } },
@@ -31,15 +32,27 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  const user = await prisma.user.findUnique({ where: { email: cleanEmail } });
-  if (!user) {
-    return NextResponse.json({ error: "No account found for that email" }, { status: 404 });
-  }
-
   const passwordHash = await bcrypt.hash(password, 10);
 
+  let saveHash;
+  if (isStylist) {
+    const stylist = await prisma.stylist.findFirst({
+      where: { email: { equals: cleanEmail, mode: "insensitive" } },
+    });
+    if (!stylist) {
+      return NextResponse.json({ error: "No stylist account found for that email" }, { status: 404 });
+    }
+    saveHash = prisma.stylist.update({ where: { id: stylist.id }, data: { passwordHash } });
+  } else {
+    const user = await prisma.user.findUnique({ where: { email: cleanEmail } });
+    if (!user) {
+      return NextResponse.json({ error: "No account found for that email" }, { status: 404 });
+    }
+    saveHash = prisma.user.update({ where: { id: user.id }, data: { passwordHash } });
+  }
+
   await prisma.$transaction([
-    prisma.user.update({ where: { id: user.id }, data: { passwordHash } }),
+    saveHash,
     // One-time use — delete it the moment it's successfully used, so the
     // same email link can't be replayed to reset the password again.
     prisma.verificationToken.delete({ where: { identifier_token: { identifier, token } } }),

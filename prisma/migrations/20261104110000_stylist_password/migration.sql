@@ -1,0 +1,1 @@
+ALTER TABLE "Stylist" ADD COLUMN IF NOT EXISTS "passwordHash" TEXT;

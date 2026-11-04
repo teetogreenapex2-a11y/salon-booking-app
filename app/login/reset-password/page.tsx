@@ -3,12 +3,12 @@ import ResetPasswordForm from "@/components/ResetPasswordForm";
 export default function ResetPasswordPage({
   searchParams,
 }: {
-  searchParams: { email?: string; token?: string };
+  searchParams: { email?: string; token?: string; kind?: string };
 }) {
   return (
     <main className="page" style={{ maxWidth: 420 }}>
       <h1 className="display title">Set a new password</h1>
-      <ResetPasswordForm email={searchParams.email || ""} token={searchParams.token || ""} />
+      <ResetPasswordForm email={searchParams.email || ""} token={searchParams.token || ""} kind={searchParams.kind} />
     </main>
   );
 }

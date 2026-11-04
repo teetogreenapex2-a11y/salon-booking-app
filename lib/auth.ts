@@ -74,25 +74,24 @@ export const authOptions: NextAuthOptions = {
           return null;
         }
 
+        // One email can hold two logins: the owner password (User) and a
+        // separate stylist password (Stylist). Whichever one matches decides
+        // which view opens. Owner is checked first, so if both were set to
+        // the same password the owner view wins.
         const user = await prisma.user.findUnique({ where: { email: credentials.email } });
-        if (!user) {
-          console.error(`[auth] credentials login: no User row found for email "${credentials.email}"`);
-          return null;
-        }
-        if (!user.passwordHash) {
-          console.error(`[auth] credentials login: User "${credentials.email}" has no passwordHash set`);
-          return null;
+        if (user?.passwordHash && (await bcrypt.compare(credentials.password, user.passwordHash))) {
+          return { id: user.id, email: user.email, name: user.name, role: "owner" } as any;
         }
 
-        const valid = await bcrypt.compare(credentials.password, user.passwordHash);
-        if (!valid) {
-          console.error(
-            `[auth] credentials login: password did not match stored hash for "${credentials.email}" (hash length ${user.passwordHash.length})`
-          );
-          return null;
+        const stylist = await prisma.stylist.findFirst({
+          where: { email: { equals: credentials.email.trim(), mode: "insensitive" } },
+        });
+        if (stylist?.passwordHash && (await bcrypt.compare(credentials.password, stylist.passwordHash))) {
+          return { id: stylist.id, email: stylist.email, name: stylist.name, role: "stylist" } as any;
         }
 
-        return { id: user.id, email: user.email, name: user.name };
+        console.error(`[auth] credentials login: no password match for "${credentials.email}"`);
+        return null;
       },
     }),
   ],
@@ -100,12 +99,16 @@ export const authOptions: NextAuthOptions = {
     async jwt({ token, user }) {
       if (user) {
         token.id = user.id;
+        // "stylist" when they signed in with a stylist password; empty for
+        // the owner password and for email-link sign-in (owner view first).
+        token.role = (user as { role?: string }).role ?? null;
       }
       return token;
     },
     async session({ session, token }) {
       if (session.user) {
         (session.user as { id?: string }).id = token.id as string;
+        (session.user as { role?: string | null }).role = (token.role as string | null) ?? null;
       }
       return session;
     },
@@ -124,6 +127,9 @@ export async function getCurrentUser() {
 export async function getCurrentOwnerContext() {
   const user = await getCurrentUser();
   if (!user?.email) return null;
+  // Signed in with a stylist password: never the owner view, even when the
+  // same email is also an owner.
+  if ((user as { role?: string | null }).role === "stylist") return null;
 
   const dbUser = await prisma.user.findUnique({
     where: { email: user.email },
