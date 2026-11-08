@@ -40,7 +40,16 @@ export default function LoginPage() {
       return;
     }
     if (res?.url) {
-      window.location.href = res.url;
+      // Stay on the address we're already on (keep only the path). The URL
+      // NextAuth returns is built from NEXTAUTH_URL; if that is a different
+      // host (hairsalonix.com vs www.), the iOS app treats it as an outside
+      // site and kicks the person out to the browser.
+      try {
+        const u = new URL(res.url, window.location.origin);
+        window.location.href = u.pathname + u.search + u.hash;
+      } catch {
+        window.location.href = "/onboarding";
+      }
     }
   }
 

@@ -22,7 +22,8 @@ export default function DeleteAccount({ canDelete }: { canDelete: boolean }) {
         setBusy(false);
         return;
       }
-      await signOut({ callbackUrl: "/" });
+      await signOut({ redirect: false });
+      window.location.href = "/";
     } catch {
       setError("Couldn't reach the server — try again.");
       setBusy(false);
