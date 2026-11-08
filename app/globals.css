@@ -317,7 +317,8 @@ body {
   display: none;
 }
 
-@media (max-width: 640px) {
+/* Phones in portrait, AND phones turned sideways (wide but short). */
+@media (max-width: 640px), (orientation: landscape) and (max-height: 500px) {
   .admin-nav-title {
     display: none;
   }
@@ -583,7 +584,8 @@ body {
   font: inherit;
   cursor: pointer;
 }
-@media (max-width: 640px) {
+/* The More sheet only opens from a More button, so it works at any width. */
+@media all {
   .admin-sheet-wrap {
     display: block;
     position: fixed;
@@ -675,6 +677,14 @@ body {
    one, and keep the More sheet clear of the native bar. */
 .native-nav .admin-nav-bottom {
   display: none !important;
+}
+/* Inside the app the native bottom bar + More sheet are the menu, on iPad
+   too, so drop the website's wide row of link buttons from the top. */
+.native-nav .admin-nav-links.admin-nav-full {
+  display: none !important;
+}
+.native-nav .admin-nav {
+  justify-content: space-between;
 }
 .native-nav .admin-sheet {
   padding-bottom: calc(96px + env(safe-area-inset-bottom));
