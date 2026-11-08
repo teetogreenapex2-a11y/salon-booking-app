@@ -15,7 +15,7 @@ workflows:
       vars:
         XCODE_PROJECT: "ios/App/App.xcodeproj"
         XCODE_SCHEME: "App"
-      node: latest
+      node: 22
     scripts:
       - name: Install npm dependencies
         script: |
