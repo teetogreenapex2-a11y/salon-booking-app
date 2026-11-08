@@ -142,7 +142,7 @@ export default async function MarketingHome({
                 ["Payments to your own account", "Connected through your own Stripe account, so customer charges land directly in your business’s bank account."],
                 ["Photo gallery", "Show off real work right on your public booking page."],
                 ["Email confirmations & reminders", "Clients get an email confirmation right after booking and a reminder before the appointment."],
-                ["Text message confirmations & reminders", "Clients who opt in get a text when they book and a reminder before the appointment, with a link to change or cancel. Optional for the client, and STOP works any time."],
+                ["Email confirmations & text reminders", "Clients get an email confirmation when they book, and those who opt in get a text reminder before the appointment, with a link to change or cancel. Optional for the client, and STOP works any time."],
                 ["Client self-service", "Clients reschedule or cancel from a private link in their confirmation, within the cancellation window you set."],
                 ["Waitlists", "When a day is full, clients join the waitlist. If someone cancels, everyone waiting gets an email and the first to book gets the spot."],
                 ["Review requests", "After a visit, clients get one email with your Google review link — never more than once a month per client."],

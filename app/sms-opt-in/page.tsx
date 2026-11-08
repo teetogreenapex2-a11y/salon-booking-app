@@ -24,11 +24,10 @@ export default function SmsOptIn() {
 
       <h2 className="display" style={{ fontSize: 20, marginBottom: 8 }}>What happens next</h2>
       <p style={{ lineHeight: 1.7, marginBottom: 12 }}>
-        Only clients who tick the box receive texts: one confirmation right after booking, and one
-        reminder before the appointment. Example confirmation:
+        Only clients who tick the box receive texts: one reminder before the appointment. Your booking confirmation is sent by email. Example reminder:
       </p>
       <blockquote style={{ margin: "0 0 16px", padding: "10px 14px", background: "rgba(0,0,0,0.04)", borderRadius: 8 }}>
-        [Salon Name]: You're booked for [Date and Time]. Change or cancel: https://www.hairsalonix.com/manage/[id] Reply STOP to cancel, HELP for help.
+        Reminder from [Salon Name] via Hairsalonix: your [Service] appointment is [Date and Time]. Change or cancel: https://www.hairsalonix.com/manage/[id] Reply STOP to cancel, HELP for help.
       </blockquote>
       <p style={{ lineHeight: 1.7 }}>
         Reply <strong>STOP</strong> at any time to stop receiving texts, or <strong>HELP</strong> for help. For

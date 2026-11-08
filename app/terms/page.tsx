@@ -16,15 +16,14 @@ export default function TermsAndConditions() {
         <p>
           Hairsalonix, a business of Rick Stitzer, provides online booking software for salons and independent stylists. When you
           book an appointment through a Hairsalonix-powered booking page and provide your phone number and tick the text-message consent box,
-          Hairsalonix will send you text messages confirming your appointment and
-          reminding you of it before your scheduled time.
+          Hairsalonix will send you a text message reminding you of it before your scheduled time. Your booking confirmation is sent by email.
         </p>
       </Section>
 
       <Section title="Message frequency">
         <p>
-          Message frequency varies based on your bookings. You can generally expect one confirmation text
-          per appointment booked, and one reminder text per upcoming appointment.
+          Message frequency varies based on your bookings. You can generally expect one reminder text
+          per upcoming appointment.
         </p>
       </Section>
 

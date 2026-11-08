@@ -161,12 +161,9 @@ export async function POST(req: NextRequest) {
     minute: "2-digit",
   });
 
-  const phone = customer.phone || customerRecord?.phone;
-  if (phone && smsConsent) {
-    await sendSms(phone, `Hi ${(customer.name || "").trim().split(/\s+/)[0] || "there"}! You're booked at ${business.name} for ${when}. See details, reschedule or add to calendar: ${manageLink} Msgs: 1 confirmation + 1 reminder. Msg & data rates may apply. Reply STOP to cancel, HELP for help.`).catch((err) =>
-      console.error("Booking confirmation SMS failed", err)
-    );
-  }
+  // The booking confirmation goes by email only. Text messages are saved for
+  // the day-before reminder (see /api/cron/send-reminders), which keeps SMS
+  // costs down.
 
   // Optional "pay with Venmo / Cash App / Zelle" block — empty (so the
   // email is unchanged) unless this stylist has set something up.
