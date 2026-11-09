@@ -12,7 +12,7 @@ import { stripe, resolvePayoutAccountId } from "@/lib/stripe";
 export async function POST(req: NextRequest) {
   const body = await req.json();
   const { businessSlug, serviceId, stylistId, startsAt, customer, customerId } = body;
-  const smsConsent = body.smsConsent === true;
+  let smsConsent = body.smsConsent === true;
 
   if (!businessSlug || !serviceId || !stylistId || !startsAt || !customer?.name || !customer?.email) {
     return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
@@ -126,6 +126,22 @@ export async function POST(req: NextRequest) {
     });
     if (membership && membership.status === "ACTIVE" && membership.paidThrough >= new Date()) {
       priceCents = Math.round((info.priceCents * (100 - membership.plan.discountPct)) / 100);
+    }
+  }
+
+  // Remember opt-in: if this phone number agreed to reminder texts on an earlier
+  // booking with this salon, keep texting them (they can reply STOP any time).
+  if (!smsConsent && customer.phone) {
+    const digits = String(customer.phone).replace(/\D/g, "").slice(-10);
+    if (digits.length === 10) {
+      const prior = await prisma.booking.findMany({
+        where: { businessId: business.id, smsConsent: true, customerPhone: { contains: digits.slice(-4) } },
+        select: { customerPhone: true },
+        take: 50,
+      });
+      if (prior.some((b) => (b.customerPhone || "").replace(/\D/g, "").slice(-10) === digits)) {
+        smsConsent = true;
+      }
     }
   }
 

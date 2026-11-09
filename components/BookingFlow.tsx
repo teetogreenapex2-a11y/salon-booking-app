@@ -423,7 +423,7 @@ function CustomerForm({
           Optional: I agree to receive an appointment reminder text message from
           Hairsalonix about my booking.
           Message frequency varies (about 1 reminder per appointment). Msg &amp; data
-          rates may apply. Reply STOP to cancel, HELP for help. Consent is not required to book. See our{" "}
+          rates may apply. Reply STOP to cancel, HELP for help. If you've opted in before, we'll keep texting your reminders. Consent is not required to book. See our{" "}
           <a href="/terms" target="_blank" rel="noreferrer">Terms</a> and{" "}
           <a href="/privacy" target="_blank" rel="noreferrer">Privacy Policy</a>.
         </span>
